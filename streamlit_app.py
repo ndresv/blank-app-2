@@ -23,12 +23,12 @@ def get_data(endpoint, params=None):
     if response.status_code == 200:
         return response.json()
     else:
-        st.error(f"Failed to fetch data from {endpoint}. Error: {response.json()['error']['message']}")
+        st.error(f"Failed to fetch data from {endpoint}. Error: {response.json().get('error', {}).get('message', 'Unknown error')}")
         return None
 
-# Fetch data
+# Fetch data with nested includes for fixtures
 teams = get_data("teams")
-fixtures = get_data("fixtures", {"include": "localTeam,visitorTeam"})
+fixtures = get_data("fixtures", params={"include": "league,season,venue"})
 standings = get_data("standings")
 players = get_data("players")
 
@@ -36,23 +36,19 @@ players = get_data("players")
 if teams and fixtures and standings and players:
     # Convert data to DataFrame
     teams_df = pd.json_normalize(teams['data']) if 'data' in teams else pd.DataFrame()
-    fixtures_df = pd.json_normalize(fixtures['data'], sep='_') if 'data' in fixtures else pd.DataFrame()
+    fixtures_df = pd.json_normalize(fixtures['data']) if 'data' in fixtures else pd.DataFrame()
     standings_df = pd.json_normalize(standings['data']) if 'data' in standings else pd.DataFrame()
     players_df = pd.json_normalize(players['data']) if 'data' in players else pd.DataFrame()
-
-    # Print keys of fixtures for debugging
-    st.write("Fixtures Data Keys:", fixtures_df.columns.tolist())
-
-    # Adjust column names based on the keys available in fixtures_df
-    if 'localTeam_name' in fixtures_df.columns and 'visitorTeam_name' in fixtures_df.columns:
-        fixtures_df.rename(columns={'localTeam_name': 'localTeam.name', 'visitorTeam_name': 'visitorTeam.name'}, inplace=True)
 
     # Select box for teams
     team_names = teams_df['name'].tolist()
     selected_team = st.sidebar.selectbox("Select a Team", team_names)
 
     # Filter fixtures by selected team
-    filtered_fixtures = fixtures_df[(fixtures_df['localTeam.name'] == selected_team) | (fixtures_df['visitorTeam.name'] == selected_team)]
+    filtered_fixtures = fixtures_df[
+        (fixtures_df['localTeam.name'] == selected_team) | 
+        (fixtures_df['visitorTeam.name'] == selected_team)
+    ]
 
     # Display team fixtures
     st.header(f"Fixtures for {selected_team}")
@@ -61,8 +57,8 @@ if teams and fixtures and standings and players:
     # Line chart for team performance
     st.header(f"{selected_team} Performance Over Time")
     fig, ax = plt.subplots()
-    ax.plot(filtered_fixtures['date'], filtered_fixtures['scores_localteam_score'], label="Local Team Score")
-    ax.plot(filtered_fixtures['date'], filtered_fixtures['scores_visitorteam_score'], label="Visitor Team Score")
+    ax.plot(filtered_fixtures['date'], filtered_fixtures['scores.localteam_score'], label="Local Team Score")
+    ax.plot(filtered_fixtures['date'], filtered_fixtures['scores.visitorteam_score'], label="Visitor Team Score")
     ax.set_xlabel("Date")
     ax.set_ylabel("Score")
     ax.legend()
