@@ -2,7 +2,6 @@ import streamlit as st
 import pandas as pd
 import requests
 import matplotlib.pyplot as plt
-import pydeck as pdk
 
 # Set up the page layout
 st.set_page_config(page_title="Football Stats", layout="wide")
