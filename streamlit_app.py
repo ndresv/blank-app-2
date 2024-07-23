@@ -28,6 +28,16 @@ fixtures = get_data("fixtures")
 standings = get_data("standings")
 players = get_data("players")
 
+# Print API responses to inspect their structure
+st.write("Teams API Response:")
+st.json(teams)
+st.write("Fixtures API Response:")
+st.json(fixtures)
+st.write("Standings API Response:")
+st.json(standings)
+st.write("Players API Response:")
+st.json(players)
+
 # Convert data to DataFrame
 teams_df = pd.json_normalize(teams['data'])
 fixtures_df = pd.json_normalize(fixtures['data'])
