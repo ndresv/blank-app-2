@@ -28,7 +28,7 @@ def get_data(endpoint, params=None):
 
 # Fetch data with nested includes for fixtures
 fixtures_endpoint = "fixtures"
-fixtures_params = {"include": "league,season,venue"}
+fixtures_params = {"include": "league;season;venue"}
 fixtures = get_data(fixtures_endpoint, params=fixtures_params)
 
 teams = get_data("teams")
