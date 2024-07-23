@@ -18,16 +18,20 @@ def get_data(endpoint, params=None):
     url = f"{base_url}{endpoint}"
     params = params or {}
     params["api_token"] = api_key
-    response = requests.get(url, params=params)
-    if response.status_code == 200:
+    try:
+        response = requests.get(url, params=params)
+        response.raise_for_status()  # Raises an HTTPError if the HTTP request returned an unsuccessful status code
         return response.json()
-    else:
-        st.error(f"Failed to fetch data from {endpoint}. Error: {response.json().get('error', {}).get('message', 'Unknown error')}")
+    except requests.exceptions.RequestException as e:
+        st.error(f"Request failed: {e}")
         return None
 
 # Fetch data with nested includes for fixtures
+fixtures_endpoint = "fixtures"
+fixtures_params = {"include": "league,season,venue"}
+fixtures = get_data(fixtures_endpoint, params=fixtures_params)
+
 teams = get_data("teams")
-fixtures = get_data("fixtures", params={"include": "league,season,venue"})
 standings = get_data("standings")
 players = get_data("players")
 
