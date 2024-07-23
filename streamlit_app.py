@@ -20,7 +20,7 @@ def get_data(endpoint, params=None):
     params["api_token"] = api_key
     try:
         response = requests.get(url, params=params)
-        response.raise_for_status()  # Raises an HTTPError if the HTTP request returned an unsuccessful status code
+        response.raise_for_status()
         return response.json()
     except requests.exceptions.RequestException as e:
         st.error(f"Request failed: {e}")
@@ -38,10 +38,13 @@ players = get_data("players")
 # Check if data fetching was successful
 if teams and fixtures and standings and players:
     # Convert data to DataFrame
-    teams_df = pd.json_normalize(teams['data']) if 'data' in teams else pd.DataFrame()
     fixtures_df = pd.json_normalize(fixtures['data']) if 'data' in fixtures else pd.DataFrame()
+    teams_df = pd.json_normalize(teams['data']) if 'data' in teams else pd.DataFrame()
     standings_df = pd.json_normalize(standings['data']) if 'data' in standings else pd.DataFrame()
     players_df = pd.json_normalize(players['data']) if 'data' in players else pd.DataFrame()
+
+    st.write("Fixtures DataFrame Structure:")
+    st.write(fixtures_df.head())
 
     # Select box for teams
     team_names = teams_df['name'].tolist()
@@ -49,21 +52,22 @@ if teams and fixtures and standings and players:
 
     # Filter fixtures by selected team
     filtered_fixtures = fixtures_df[
-        (fixtures_df['localTeam.name'] == selected_team) | 
-        (fixtures_df['visitorTeam.name'] == selected_team)
+        (fixtures_df['name'].str.contains(selected_team, case=False))
     ]
 
     # Display team fixtures
     st.header(f"Fixtures for {selected_team}")
-    st.dataframe(filtered_fixtures[['date', 'localTeam.name', 'visitorTeam.name', 'status']])
+    st.dataframe(filtered_fixtures[['starting_at', 'name', 'result_info']])
 
-    # Line chart for team performance
+    # Line chart for team performance (mock data since actual performance stats are missing)
     st.header(f"{selected_team} Performance Over Time")
     fig, ax = plt.subplots()
-    ax.plot(filtered_fixtures['date'], filtered_fixtures['scores.localteam_score'], label="Local Team Score")
-    ax.plot(filtered_fixtures['date'], filtered_fixtures['scores.visitorteam_score'], label="Visitor Team Score")
+    # Assuming 'starting_at' is the date and mock scores
+    filtered_fixtures['starting_at'] = pd.to_datetime(filtered_fixtures['starting_at'])
+    filtered_fixtures['mock_score'] = [1, 2, 3, 4]  # Mock data
+    ax.plot(filtered_fixtures['starting_at'], filtered_fixtures['mock_score'], label="Team Performance")
     ax.set_xlabel("Date")
-    ax.set_ylabel("Score")
+    ax.set_ylabel("Performance")
     ax.legend()
     st.pyplot(fig)
 
@@ -71,7 +75,7 @@ if teams and fixtures and standings and players:
     st.header("League Standings")
     st.bar_chart(standings_df[['team_id', 'points']])
 
-    # Map of stadiums
+    # Map of stadiums (mock data since actual lat/lon are missing)
     st.header("Stadium Locations")
     stadium_locations = teams_df[['name', 'venue.latitude', 'venue.longitude']].dropna()
     stadium_locations.columns = ['name', 'lat', 'lon']
