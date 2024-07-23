@@ -31,23 +31,33 @@ fixtures_endpoint = "fixtures"
 fixtures_params = {"include": "league;season;venue"}
 fixtures = get_data(fixtures_endpoint, params=fixtures_params)
 
-teams = get_data("teams")
-standings = get_data("standings")
-players = get_data("players")
+# Fetch leagues data
+leagues = get_data("leagues")
 
 # Check if data fetching was successful
-if teams and fixtures and standings and players:
+if fixtures and leagues:
     # Convert data to DataFrame
     fixtures_df = pd.json_normalize(fixtures['data']) if 'data' in fixtures else pd.DataFrame()
-    teams_df = pd.json_normalize(teams['data']) if 'data' in teams else pd.DataFrame()
-    standings_df = pd.json_normalize(standings['data']) if 'data' in standings else pd.DataFrame()
-    players_df = pd.json_normalize(players['data']) if 'data' in players else pd.DataFrame()
+    leagues_df = pd.json_normalize(leagues['data']) if 'data' in leagues else pd.DataFrame()
 
     st.write("Fixtures DataFrame Structure:")
     st.write(fixtures_df.head())
 
+    st.write("Leagues DataFrame Structure:")
+    st.write(leagues_df.head())
+
+    # Display League Information
+    st.header("Leagues Information")
+    for _, league in leagues_df.iterrows():
+        st.subheader(league['name'])
+        st.image(league['image_path'], use_column_width=True)
+        st.write(f"Short Code: {league['short_code']}")
+        st.write(f"Country ID: {league['country_id']}")
+        st.write(f"Last Played At: {league['last_played_at']}")
+        st.write("------")
+
     # Select box for teams
-    team_names = teams_df['name'].tolist()
+    team_names = fixtures_df['name'].tolist()
     selected_team = st.sidebar.selectbox("Select a Team", team_names)
 
     # Filter fixtures by selected team
@@ -73,11 +83,11 @@ if teams and fixtures and standings and players:
 
     # Bar chart for standings
     st.header("League Standings")
-    st.bar_chart(standings_df[['team_id', 'points']])
+    st.bar_chart(fixtures_df[['starting_at', 'result_info']])
 
     # Map of stadiums (mock data since actual lat/lon are missing)
     st.header("Stadium Locations")
-    stadium_locations = teams_df[['name', 'venue.latitude', 'venue.longitude']].dropna()
+    stadium_locations = fixtures_df[['name', 'venue.latitude', 'venue.longitude']].dropna()
     stadium_locations.columns = ['name', 'lat', 'lon']
     st.map(stadium_locations)
 
