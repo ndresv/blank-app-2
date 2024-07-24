@@ -73,7 +73,7 @@ def display_charts_data(charts_data):
     if charts_data:
         for group in charts_data.keys():
             st.subheader(f"Group: {group}")
-
+            
             # Handle special cases for Group 1 and 7
             if group == '1' or group == '7':
                 group_data = charts_data[group]
@@ -92,41 +92,39 @@ def display_charts_data(charts_data):
             else:
                 group_data = charts_data[group]
 
-            # Add debugging to inspect data structure
-            st.write(f"Raw Data for Group {group}:", group_data)
-            
-            # Convert to DataFrame
+            # Preprocess data to ensure uniform length
             try:
-                # Check if all dictionaries in group_data have the same keys
-                keys = group_data[0].keys() if group_data else []
-                for item in group_data:
-                    if item.keys() != keys:
-                        st.warning(f"Inconsistent data keys found: {item.keys()}")
-                        break
+                # Debug: Print data structure for inspection
+                st.write(f"Raw Data for Group {group}:", group_data)
                 
-                charts_df = pd.DataFrame(group_data)
+                # Convert to DataFrame
+                if isinstance(group_data, list):
+                    # Flatten list of dictionaries into a DataFrame
+                    charts_df = pd.DataFrame(group_data)
+                else:
+                    st.warning(f"Unexpected data format for Group {group}. Expected list of dictionaries.")
+                    continue
                 
-                # Add debugging to inspect DataFrame
-                st.write(f"DataFrame for Group {group}:", charts_df)
-                
-                # Check if DataFrame is empty
+                # Check for consistency
                 if charts_df.empty:
                     st.warning(f"No data available for Group {group}.")
                     continue
                 
+                st.write(f"{group} Table")
+                st.dataframe(charts_df)
+                
                 # Example charts (customize based on your actual data)
-                if 'state' in charts_df.columns and 'value' in charts_df.columns:
+                if 'value' in charts_df.columns:
                     st.line_chart(charts_df.set_index('state')['value'])
                     st.area_chart(charts_df.set_index('state')['value'])
                     st.bar_chart(charts_df.set_index('state')['value'])
                 else:
-                    st.warning(f"Expected columns 'state' and 'value' not found for Group {group}.")
+                    st.warning(f"'value' column not found in data for Group {group}.")
                 
             except Exception as e:
                 st.error(f"Error processing data for group {group}: {e}")
     else:
         st.warning("No charts data available.")
-
 # Function to display preferred routes data
 def display_preferred_routes(routes):
     st.header("Preferred Routes")
