@@ -97,30 +97,32 @@ def display_preferred_routes(routes):
 def display_vatsim_pilots(pilots):
     st.header("VATSIM Pilots")
     
-    # Inspect the structure of the data
-    st.write("Raw VATSIM Pilots Data")
-    st.json(pilots)
-
     if pilots:
-        # Check if the data is a dictionary with a specific key
-        if isinstance(pilots, dict):
-            # Display data if it contains known keys
-            if 'pilots' in pilots:
-                pilots_df = pd.DataFrame(pilots['pilots'])
-                st.write("VATSIM Pilots Table")
-                st.dataframe(pilots_df)
+        # Extract airport key
+        airport_key = list(pilots.keys())[0]
+        airport_data = pilots[airport_key]
+        
+        # Handle Departures
+        if 'Departures' in airport_data:
+            departures = airport_data['Departures']
+            if departures:
+                departures_df = pd.DataFrame(departures)
+                st.write("Departures")
+                st.dataframe(departures_df)
             else:
-                st.warning("Unexpected dictionary structure for VATSIM pilots.")
-        # Check if the data is a list of dictionaries
-        elif isinstance(pilots, list) and all(isinstance(item, dict) for item in pilots):
-            pilots_df = pd.DataFrame(pilots)
-            st.write("VATSIM Pilots Table")
-            st.dataframe(pilots_df)
-        else:
-            st.warning("Unexpected data format for VATSIM pilots.")
+                st.write("No departure data available.")
+        
+        # Handle Arrivals
+        if 'Arrivals' in airport_data:
+            arrivals = airport_data['Arrivals']
+            if arrivals:
+                arrivals_df = pd.DataFrame(arrivals)
+                st.write("Arrivals")
+                st.dataframe(arrivals_df)
+            else:
+                st.write("No arrival data available.")
     else:
         st.warning("No VATSIM pilots data available.")
-
 # Main app logic
 st.title("Aviation Data Explorer")
 
