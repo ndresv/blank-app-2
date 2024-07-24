@@ -95,14 +95,6 @@ def display_preferred_routes(routes):
     else:
         st.warning("No preferred routes available.")
 
-# Function to display weather data
-def display_weather_data(weather):
-    st.header("Weather Data")
-    if weather:
-        st.write(weather)
-    else:
-        st.warning("No weather data available.")
-
 # Function to display VATSIM pilots data
 def display_vatsim_pilots(pilots):
     st.header("VATSIM Pilots")
@@ -134,12 +126,6 @@ elif api_option == 'Preferred Routes':
     if st.button("Fetch Preferred Routes Data"):
         data = fetch_data(api_option, API_ENDPOINTS['Preferred Routes'])
         display_preferred_routes(data)
-
-elif api_option == 'Weather METAR':
-    icao_code = st.text_input("Enter ICAO code (e.g., KMIA)")
-    if st.button("Fetch Weather Data"):
-        data = fetch_data(api_option, f"{API_ENDPOINTS['Weather METAR']}{icao_code}")
-        display_weather_data(data)
 
 elif api_option == 'VATSIM Pilots':
     if st.button("Fetch VATSIM Pilots Data"):
