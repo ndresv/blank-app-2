@@ -9,7 +9,7 @@ API_ENDPOINTS = {
     'Preferred Routes': 'https://api.aviationapi.com/v1/preferred-routes',
     'Weather METAR': 'https://api.aviationapi.com/v1/weather/metar?apt=',
     'VATSIM Pilots': 'https://api.aviationapi.com/v1/vatsim/pilots',
-    'Charts': 'https://api.aviationapi.com/v1/charts?apt={apt}&group={group}'
+    'Charts': 'https://api.aviationapi.com/v1/charts?apt={icao}&group={group}'
 }
 
 # Function to fetch data from the API
@@ -95,41 +95,29 @@ def display_vatsim_pilots(pilots):
     else:
         st.warning("No VATSIM pilots data available.")
 
-# Function to display charts data
-def display_charts_data(data, group):
-    if data:
-        st.header(f"Charts Data - Group {group}")
-        if group == '1':
-            group_name = 'General, Departures, Arrivals, Approaches'
-        elif group == '2':
-            group_name = 'Airport Diagram only'
-        elif group == '3':
-            group_name = 'General only'
-        elif group == '4':
-            group_name = 'Departures only'
-        elif group == '5':
-            group_name = 'Arrivals only'
-        elif group == '6':
-            group_name = 'Approaches only'
-        elif group == '7':
-            group_name = 'Everything but General'
-        else:
-            group_name = 'Unknown Group'
-
-        st.write(f"Displaying charts for Group: {group_name}")
-
-        charts_df = pd.DataFrame(data)
+# Function to display chart data
+def display_chart_data(charts):
+    st.header("Chart Data")
+    if charts:
+        # Create DataFrame from chart data
+        charts_df = pd.DataFrame(charts)
+        
+        # Display interactive table
         st.write("Charts Table")
         st.dataframe(charts_df)
 
-        # Example charts based on the data
+        # Example charts based on DataFrame
         if not charts_df.empty:
-            st.write("Charts")
-            st.line_chart(charts_df[['some_numeric_column']])  # Replace 'some_numeric_column' with actual numeric column
-            st.area_chart(charts_df[['some_numeric_column']])  # Replace 'some_numeric_column' with actual numeric column
-            st.bar_chart(charts_df[['some_numeric_column']])  # Replace 'some_numeric_column' with actual numeric column
+            st.write("Line Chart")
+            st.line_chart(charts_df[['state', 'city']].set_index('state'))
+            
+            st.write("Bar Chart")
+            st.bar_chart(charts_df[['state', 'city']].set_index('state'))
+            
+            st.write("Area Chart")
+            st.area_chart(charts_df[['state', 'city']].set_index('state'))
     else:
-        st.warning("No charts data available.")
+        st.warning("No chart data available.")
 
 # Main app logic
 st.title("Aviation Data Explorer")
@@ -142,13 +130,12 @@ if api_option == 'Airports':
     if st.button("Fetch Airport Data"):
         data = fetch_data(api_option, f"{API_ENDPOINTS['Airports']}{icao_code}")
         if data:
-            st.write("Debugging Data Output: ", data)  # Debugging statement
             airport = data.get(icao_code, [None])[0]  # Access the first airport in the list
             if airport:
                 display_airport_data(airport, show_map)
             else:
                 st.warning("Airport not found.")
-                
+
 elif api_option == 'Preferred Routes':
     if st.button("Fetch Preferred Routes Data"):
         data = fetch_data(api_option, API_ENDPOINTS['Preferred Routes'])
@@ -166,11 +153,20 @@ elif api_option == 'VATSIM Pilots':
         display_vatsim_pilots(data)
 
 elif api_option == 'Charts':
-    apt_code = st.text_input("Enter ICAO code (e.g., KMIA)")
-    group = st.selectbox("Select Chart Group", [1, 2, 3, 4, 5, 6, 7])
+    icao_code = st.text_input("Enter ICAO code (e.g., KMIA)")
+    group = st.selectbox("Select Chart Group", [
+        "1 -> General, Departures, Arrivals, Approaches",
+        "2 -> Airport Diagram only",
+        "3 -> General only",
+        "4 -> Departures only",
+        "5 -> Arrivals only",
+        "6 -> Approaches only",
+        "7 -> Everything but General"
+    ])
+    group_number = group.split("->")[0].strip()
     if st.button("Fetch Charts Data"):
-        data = fetch_data(api_option, API_ENDPOINTS['Charts'].format(apt=apt_code, group=group))
-        display_charts_data(data, group)
+        data = fetch_data(api_option, API_ENDPOINTS['Charts'].format(icao=icao_code, group=group_number))
+        display_chart_data(data)
 
 st.sidebar.header("Additional Features")
 show_expanded = st.sidebar.checkbox("Show Expanded")
