@@ -18,9 +18,11 @@ def fetch_data(endpoint, params=None):
 
 # Function to convert latitude and longitude to decimal
 def convert_to_decimal(coord):
-    degrees, minutes = coord[:-1].split('-')
-    decimal = float(degrees) + float(minutes) / 60
-    if coord[-1] in ['S', 'W']:
+    degrees = float(coord.split('-')[0])
+    minutes = float(coord.split('-')[1][:2])
+    direction = coord[-1]
+    decimal = degrees + minutes / 60
+    if direction in ['S', 'W']:
         decimal = -decimal
     return decimal
 
@@ -50,7 +52,6 @@ def main():
         if st.button("Fetch Charts"):
             data = fetch_data("charts", {"apt": icao})
             if data:
-                # Debugging: Inspect the data
                 st.write("Charts data:", data)
                 
                 df = pd.DataFrame(data)
@@ -113,7 +114,6 @@ def main():
         if st.button("Fetch Preferred Routes"):
             data = fetch_data("preferred-routes", {"dep": departure, "arr": arrival})
             if data:
-                # Debugging: Inspect the data
                 st.write("Preferred routes data:", data)
 
                 df = pd.DataFrame(data)
@@ -129,7 +129,6 @@ def main():
         if st.button("Fetch METAR"):
             data = fetch_data("weather/metar", {"apt": icao})
             if data:
-                # Debugging: Inspect the data
                 st.write("METAR data:", data)
 
                 st.json(data)
@@ -145,7 +144,6 @@ def main():
         if st.button("Fetch TAF"):
             data = fetch_data("weather/taf", {"apt": icao})
             if data:
-                # Debugging: Inspect the data
                 st.write("TAF data:", data)
 
                 st.json(data)
@@ -168,7 +166,6 @@ def main():
             }
             data = fetch_data("vatsim/pilots", params)
             if data:
-                # Debugging: Inspect the data
                 st.write("VATSIM pilots data:", data)
 
                 df = pd.DataFrame(data)
@@ -202,7 +199,6 @@ def main():
         if st.button("Fetch VATSIM Controllers"):
             data = fetch_data("vatsim/controllers", {"fac": facility})
             if data:
-                # Debugging: Inspect the data
                 st.write("VATSIM controllers data:", data)
 
                 df = pd.DataFrame(data)
