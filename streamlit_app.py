@@ -1,6 +1,7 @@
 import streamlit as st
 import requests
 import pandas as pd
+import matplotlib.pyplot as plt
 import pydeck as pdk
 
 # Define API endpoints
@@ -16,10 +17,10 @@ def fetch_data(endpoint, params=None):
         return None
 
 # Function to convert latitude and longitude to decimal
-def convert_to_decimal(degree_str, direction):
-    degrees, minutes = degree_str.split('-')
+def convert_to_decimal(coord):
+    degrees, minutes = coord[:-1].split('-')
     decimal = float(degrees) + float(minutes) / 60
-    if direction in ['S', 'W']:
+    if coord[-1] in ['S', 'W']:
         decimal = -decimal
     return decimal
 
@@ -49,6 +50,7 @@ def main():
         if st.button("Fetch Charts"):
             data = fetch_data("charts", {"apt": icao})
             if data:
+                # Debugging: Inspect the data
                 st.write("Charts data:", data)
                 
                 df = pd.DataFrame(data)
@@ -69,11 +71,12 @@ def main():
         if st.button("Fetch Airport Data"):
             data = fetch_data("airports", {"apt": icao})
             if data:
+                # Debugging: Inspect the data
                 st.write("Airport data:", data)
 
                 # Convert latitude and longitude to decimal format
-                latitude = convert_to_decimal(data['latitude'], data['latitude'][-1])
-                longitude = convert_to_decimal(data['longitude'], data['longitude'][-1])
+                latitude = convert_to_decimal(data['latitude'])
+                longitude = convert_to_decimal(data['longitude'])
 
                 airport_location = {
                     'lat': [latitude],
@@ -110,6 +113,7 @@ def main():
         if st.button("Fetch Preferred Routes"):
             data = fetch_data("preferred-routes", {"dep": departure, "arr": arrival})
             if data:
+                # Debugging: Inspect the data
                 st.write("Preferred routes data:", data)
 
                 df = pd.DataFrame(data)
@@ -125,6 +129,7 @@ def main():
         if st.button("Fetch METAR"):
             data = fetch_data("weather/metar", {"apt": icao})
             if data:
+                # Debugging: Inspect the data
                 st.write("METAR data:", data)
 
                 st.json(data)
@@ -140,6 +145,7 @@ def main():
         if st.button("Fetch TAF"):
             data = fetch_data("weather/taf", {"apt": icao})
             if data:
+                # Debugging: Inspect the data
                 st.write("TAF data:", data)
 
                 st.json(data)
@@ -162,6 +168,7 @@ def main():
             }
             data = fetch_data("vatsim/pilots", params)
             if data:
+                # Debugging: Inspect the data
                 st.write("VATSIM pilots data:", data)
 
                 df = pd.DataFrame(data)
@@ -195,6 +202,7 @@ def main():
         if st.button("Fetch VATSIM Controllers"):
             data = fetch_data("vatsim/controllers", {"fac": facility})
             if data:
+                # Debugging: Inspect the data
                 st.write("VATSIM controllers data:", data)
 
                 df = pd.DataFrame(data)
