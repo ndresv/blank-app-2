@@ -101,7 +101,11 @@ if api_option == 'Airports':
     if st.button("Fetch Airport Data"):
         data = fetch_data(api_option, API_ENDPOINTS['Airports'], {'apt': icao_code})
         if data:
-            airport = next((item for item in data if item['icao_ident'] == icao_code), None)
+            if data['icao_ident'] == icao_code:
+    airport = data
+else:
+    airport = None
+
             if airport:
                 display_airport_data(airport)
             else:
