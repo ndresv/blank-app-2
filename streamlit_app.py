@@ -14,13 +14,11 @@ API_ENDPOINTS = {
 
 # Grouping descriptions
 CHART_GROUPS = {
-    "1": "General, Departures, Arrivals, Approaches",
     "2": "Airport Diagram only",
     "3": "General only",
     "4": "Departures only",
     "5": "Arrivals only",
     "6": "Approaches only",
-    "7": "Everything but General"
 }
 
 # Function to fetch data from the API
