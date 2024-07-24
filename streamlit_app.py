@@ -70,15 +70,28 @@ def display_airport_data(airport, show_map):
 # Function to display charts data
 def display_charts_data(charts_data):
     st.header("Charts Data")
-    if charts_data:
-        for group in charts_data.keys():
-            st.subheader(f"Group: {group}")
-            charts_df = pd.DataFrame(charts_data[group])
-            st.write(f"{group} Table")
-            st.dataframe(charts_df)
-
-    else:
+    
+    if not charts_data:
         st.warning("No charts data available.")
+        return
+
+    for group, data in charts_data.items():
+        if isinstance(data, dict):
+            st.subheader(f"Group: {group}")
+            if group in ["1", "7"]:
+                for sub_group, sub_data in data.items():
+                    st.subheader(f"Sub-Group: {sub_group}")
+                    if isinstance(sub_data, list):
+                        charts_df = pd.DataFrame(sub_data)
+                        st.write(f"{sub_group} Table")
+                        st.dataframe(charts_df)
+
+            else:
+                st.subheader(f"Group: {group}")
+                if isinstance(data, list):
+                    charts_df = pd.DataFrame(data)
+                    st.write(f"{group} Table")
+                    st.dataframe(charts_df)
 
 # Function to display preferred routes data
 def display_preferred_routes(routes):
