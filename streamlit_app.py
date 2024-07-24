@@ -2,7 +2,6 @@ import streamlit as st
 import requests
 import pandas as pd
 import matplotlib.pyplot as plt
-import numpy as np
 import pydeck as pdk
 
 # Define API endpoints
@@ -34,27 +33,29 @@ def main():
 
     # Widgets
     st.sidebar.subheader("Filter Options")
-    filter_choice = st.sidebar.radio("Select filter type:", ["None", "Departures", "Arrivals"])
+    icao = st.sidebar.text_input("Enter ICAO Code (e.g., KATL)", value="KATL")
     date_filter = st.sidebar.date_input("Select date:", pd.to_datetime("today"))
 
     if option == "Charts":
         st.header("Charts")
-        icao = st.text_input("Enter ICAO Code (e.g., KATL)")
         if st.button("Fetch Charts"):
             data = fetch_data("charts", {"apt": icao})
             if data:
                 st.json(data)
-    
+                # Assuming data includes a structure for plotting
+                if 'charts' in data:
+                    charts_df = pd.DataFrame(data['charts'])
+                    st.line_chart(charts_df[['altitude', 'heading']])  # Example line chart
+
     elif option == "Airports":
         st.header("Airports")
-        icao = st.text_input("Enter ICAO Code (e.g., KATL)")
         if st.button("Fetch Airport Data"):
             data = fetch_data("airports", {"apt": icao})
             if data:
                 df = pd.DataFrame([data])
                 st.dataframe(df)  # Interactive table
                 st.success("Airport data fetched successfully!")
-    
+
     elif option == "Preferred Routes":
         st.header("Preferred Routes")
         departure = st.text_input("Enter Departure ICAO (e.g., KATL)")
@@ -65,57 +66,46 @@ def main():
                 df = pd.DataFrame(data)
                 st.dataframe(df)  # Interactive table
                 st.info("Preferred routes data fetched successfully!")
-    
+
     elif option == "Weather METAR":
         st.header("Weather METAR")
-        icao = st.text_input("Enter ICAO Code (e.g., KAVL)")
         if st.button("Fetch METAR"):
             data = fetch_data("weather/metar", {"apt": icao})
             if data:
                 st.json(data)
-                # Line chart example
-                df = pd.DataFrame(data['data'])  # Adjust based on actual data structure
-                st.line_chart(df[['temp', 'wind_speed']])  # Example columns
-    
+                # Line chart example: Temperature over time
+                metar_df = pd.DataFrame(data['data'])  # Adjust based on actual data structure
+                st.line_chart(metar_df[['temp', 'wind_speed']])  # Example columns
+
     elif option == "Weather TAF":
         st.header("Weather TAF")
-        icao = st.text_input("Enter ICAO Code (e.g., KAVL)")
         if st.button("Fetch TAF"):
             data = fetch_data("weather/taf", {"apt": icao})
             if data:
                 st.json(data)
-                # Area chart example
-                df = pd.DataFrame(data['data'])  # Adjust based on actual data structure
-                st.area_chart(df[['temp', 'wind_speed']])  # Example columns
-    
+                # Area chart example: Temperature trends
+                taf_df = pd.DataFrame(data['data'])  # Adjust based on actual data structure
+                st.area_chart(taf_df[['temp']])  # Example column
+
     elif option == "VATSIM Pilots":
         st.header("VATSIM Pilots")
-        airport = st.text_input("Enter Airport ICAO (e.g., KATL)")
-        dep = st.checkbox("Show only departures")
-        arr = st.checkbox("Show only arrivals")
         if st.button("Fetch VATSIM Pilots"):
-            params = {
-                "apt": airport,
-                "dep": 1 if dep else None,
-                "arr": 1 if arr else None
-            }
-            data = fetch_data("vatsim/pilots", params)
+            data = fetch_data("vatsim/pilots", {"apt": icao})
             if data:
                 df = pd.DataFrame(data)
                 st.dataframe(df)  # Interactive table
                 st.warning("VATSIM pilots data fetched successfully!")
-    
+
     elif option == "VATSIM Controllers":
         st.header("VATSIM Controllers")
-        facility = st.text_input("Enter Facility (e.g., CLT)")
         if st.button("Fetch VATSIM Controllers"):
-            data = fetch_data("vatsim/controllers", {"fac": facility})
+            data = fetch_data("vatsim/controllers", {"apt": icao})
             if data:
                 df = pd.DataFrame(data)
                 st.dataframe(df)  # Interactive table
                 st.success("VATSIM controllers data fetched successfully!")
-    
-    # Example Map
+
+    # Map Example
     st.header("Map with Points")
     points = {
         'lat': [37.7749, 34.0522, 40.7128],
@@ -125,23 +115,24 @@ def main():
     df_points = pd.DataFrame(points)
     st.map(df_points)
 
-    # Example Bar Chart
+    # Bar Chart Example
     st.header("Example Bar Chart")
-    df_bar = pd.DataFrame({
+    bar_data = {
         'City': ['San Francisco', 'Los Angeles', 'New York'],
-        'Value': [10, 20, 30]
-    })
+        'Flights': [150, 200, 300]
+    }
+    df_bar = pd.DataFrame(bar_data)
     st.bar_chart(df_bar.set_index('City'))
 
-    # Example Progress Bar
+    # Progress Bar Example
     st.header("Progress Bar Example")
-    with st.spinner("Loading..."):
+    with st.spinner("Loading data..."):
         import time
         for i in range(100):
             time.sleep(0.05)
             st.progress(i + 1)
 
-    # Example 3D Map
+    # 3D Map Example
     st.header("3D Map Example")
     deck = pdk.Deck(
         initial_view_state=pdk.ViewState(
