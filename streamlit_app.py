@@ -67,13 +67,12 @@ def display_airport_data(airport, show_map):
     st.area_chart(chart_data.set_index('Attribute')['Value'])
     st.bar_chart(chart_data.set_index('Attribute')['Value'])
 
-# Function to display charts data
 def display_charts_data(charts_data):
     st.header("Charts Data")
     if charts_data:
         for group in charts_data.keys():
             st.subheader(f"Group: {group}")
-
+            
             # Handle special cases for Group 1 and 7
             if group == '1' or group == '7':
                 group_data = charts_data[group]
@@ -91,34 +90,38 @@ def display_charts_data(charts_data):
                     continue
             else:
                 group_data = charts_data[group]
-
-            # Ensure data is in a consistent format
-            try:
-                # Normalize the data (convert lists of dicts to a list of dicts if needed)
-                if isinstance(group_data, list):
-                    group_data = {i: item for i, item in enumerate(group_data)}
-
-                # Create DataFrame
-                charts_df = pd.DataFrame(group_data)
-
-                # Check for length consistency
-                if not all(len(v) == len(charts_df) for v in charts_df.values()):
-                    st.warning(f"Inconsistent data lengths for group {group}.")
-                    continue
-
-                st.write(f"{group} Table")
-                st.dataframe(charts_df)
-
-                # Example charts (customize based on your actual data)
-                if 'value' in charts_df.columns:
-                    st.line_chart(charts_df.set_index('state')['value'])
-                    st.area_chart(charts_df.set_index('state')['value'])
-                    st.bar_chart(charts_df.set_index('state')['value'])
-                else:
-                    st.warning("No 'value' column found for charts.")
+            
+            # Flatten the data if it's a list of dictionaries with different keys
+            if isinstance(group_data, list):
+                # Create a DataFrame from a list of dictionaries
+                try:
+                    # Create a DataFrame with consistent columns
+                    df = pd.DataFrame(group_data)
                     
-            except Exception as e:
-                st.error(f"Error processing data for group {group}: {e}")
+                    # Check for consistent columns and fill missing columns if needed
+                    all_columns = set(col for d in group_data for col in d.keys())
+                    for col in all_columns:
+                        if col not in df.columns:
+                            df[col] = None
+                    
+                    # Ensure that all columns have the same length
+                    df = df[sorted(df.columns)]
+                    
+                    st.write(f"{group} Table")
+                    st.dataframe(df)
+                    
+                    # Example charts (customize based on your actual data)
+                    if 'state' in df.columns and 'value' in df.columns:
+                        st.line_chart(df.set_index('state')['value'])
+                        st.area_chart(df.set_index('state')['value'])
+                        st.bar_chart(df.set_index('state')['value'])
+                    else:
+                        st.warning("Columns 'state' and/or 'value' are missing for charts.")
+                    
+                except Exception as e:
+                    st.error(f"Error processing data for group {group}: {e}")
+            else:
+                st.warning(f"Data for group {group} is not a list of dictionaries.")
     else:
         st.warning("No charts data available.")
 
