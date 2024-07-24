@@ -14,13 +14,11 @@ API_ENDPOINTS = {
 
 # Grouping descriptions
 CHART_GROUPS = {
-    "1": "General, Departures, Arrivals, Approaches",
     "2": "Airport Diagram only",
     "3": "General only",
     "4": "Departures only",
     "5": "Arrivals only",
     "6": "Approaches only",
-    "7": "Everything but General"
 }
 
 # Function to fetch data from the API
@@ -82,16 +80,11 @@ def display_airport_data(airport, show_map):
 def display_charts_data(charts_data):
     st.header("Charts Data")
     if charts_data:
-        for group, data in charts_data.items():
-            st.subheader(f"Group: {CHART_GROUPS.get(group, 'Unknown Group')} (Group ID: {group})")
-            charts_df = pd.DataFrame(data)
-            st.write(f"{CHART_GROUPS.get(group, 'Unknown Group')} Table")
+        for group in charts_data.keys():
+            description = CHART_GROUPS.get(group, 'Unknown Group')
+            st.subheader(f"Group: {description}")
+            charts_df = pd.DataFrame(charts_data[group])
             st.dataframe(charts_df)
-            
-            # Example chart (customize based on your actual data)
-            st.line_chart(charts_df[['state', 'city', 'facility_name']].set_index('state'))
-            st.area_chart(charts_df[['state', 'city', 'facility_name']].set_index('state'))
-            st.bar_chart(charts_df[['state', 'city', 'facility_name']].set_index('state'))
     else:
         st.warning("No charts data available.")
 
@@ -159,12 +152,11 @@ elif api_option == 'VATSIM Pilots':
 elif api_option == 'Charts':
     icao_code = st.text_input("Enter ICAO code (e.g., KMIA)")
     group_description = st.selectbox("Select Chart Group", list(CHART_GROUPS.values()))
-    group = [key for key, value in CHART_GROUPS.items() if value == group_description]
-    group = group[0] if group else None  # Safeguard in case of no match
-    if st.button("Fetch Charts Data"):
-        if group:
+    # Find the group key from description
+    group = next((key for key, value in CHART_GROUPS.items() if value == group_description), None)
+    if group:
+        if st.button("Fetch Charts Data"):
             data = fetch_data('Charts', API_ENDPOINTS['Charts'].format(icao=icao_code, group=group))
             display_charts_data(data)
-        else:
-            st.warning("Invalid chart group selected.")
-
+    else:
+        st.warning("Invalid group selected.")
