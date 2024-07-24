@@ -71,50 +71,54 @@ def display_airport_data(airport, show_map):
 def display_charts_data(charts_data):
     st.header("Charts Data")
     if charts_data:
-        for group, data in charts_data.items():
+        for group in charts_data.keys():
             st.subheader(f"Group: {group}")
-            
+
             # Handle special cases for Group 1 and 7
             if group == '1' or group == '7':
-                if isinstance(data, dict):
-                    if 'General' in data:
-                        data = data['General']
-                    elif 'DP' in data:
-                        data = data['DP']
+                group_data = charts_data[group]
+                if isinstance(group_data, dict):
+                    # Handle nested structures for Group 1 and 7
+                    if 'General' in group_data:
+                        group_data = group_data['General']
+                    elif 'DP' in group_data:
+                        group_data = group_data['DP']
                     else:
                         st.warning(f"Unexpected structure for Group {group}.")
                         continue
                 else:
                     st.warning(f"Unexpected data type for Group {group}.")
                     continue
-            
-            # Ensure data is in list of dictionaries format
-            if isinstance(data, list) and all(isinstance(item, dict) for item in data):
-                try:
-                    # Convert to DataFrame
-                    charts_df = pd.DataFrame(data)
-                    
-                    # Check if DataFrame is empty or has inconsistent lengths
-                    if charts_df.empty:
-                        st.warning(f"No data available for group {group}.")
-                        continue
-                    
-                    # Display DataFrame
-                    st.write(f"{group} Table")
-                    st.dataframe(charts_df)
-
-                    # Display charts - assuming 'value' is a placeholder column name
-                    # Replace 'value' with actual column names present in your data
-                    if 'value' in charts_df.columns:
-                        st.line_chart(charts_df.set_index('state')['value'])
-                        st.area_chart(charts_df.set_index('state')['value'])
-                        st.bar_chart(charts_df.set_index('state')['value'])
-                    else:
-                        st.warning(f"No 'value' column found for charts in group {group}.")
-                except Exception as e:
-                    st.error(f"Error processing data for group {group}: {e}")
             else:
-                st.warning(f"Data for group {group} is not in the expected format.")
+                group_data = charts_data[group]
+
+            # Ensure data is in a consistent format
+            try:
+                # Normalize the data (convert lists of dicts to a list of dicts if needed)
+                if isinstance(group_data, list):
+                    group_data = {i: item for i, item in enumerate(group_data)}
+
+                # Create DataFrame
+                charts_df = pd.DataFrame(group_data)
+
+                # Check for length consistency
+                if not all(len(v) == len(charts_df) for v in charts_df.values()):
+                    st.warning(f"Inconsistent data lengths for group {group}.")
+                    continue
+
+                st.write(f"{group} Table")
+                st.dataframe(charts_df)
+
+                # Example charts (customize based on your actual data)
+                if 'value' in charts_df.columns:
+                    st.line_chart(charts_df.set_index('state')['value'])
+                    st.area_chart(charts_df.set_index('state')['value'])
+                    st.bar_chart(charts_df.set_index('state')['value'])
+                else:
+                    st.warning("No 'value' column found for charts.")
+                    
+            except Exception as e:
+                st.error(f"Error processing data for group {group}: {e}")
     else:
         st.warning("No charts data available.")
 
