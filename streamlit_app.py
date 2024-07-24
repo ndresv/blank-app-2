@@ -2,128 +2,120 @@ import streamlit as st
 import pandas as pd
 import requests
 import matplotlib.pyplot as plt
-import matplotlib.dates as mdates
+import numpy as np
 import pydeck as pdk
 
-# API Endpoints
+# Define API endpoints
 API_ENDPOINTS = {
-    'charts': 'https://api.aviationapi.com/v1/charts',
-    'airports': 'https://api.aviationapi.com/v1/airports',
-    'preferred_routes': 'https://api.aviationapi.com/v1/preferred-routes',
-    'weather_metar': 'https://api.aviationapi.com/v1/weather/metar',
-    'weather_taf': 'https://api.aviationapi.com/v1/weather/taf',
-    'vatsim_pilots': 'https://api.aviationapi.com/v1/vatsim/pilots',
-    'vatsim_controllers': 'https://api.aviationapi.com/v1/vatsim/controllers'
+    "charts": "https://api.aviationapi.com/v1/charts",
+    "airports": "https://api.aviationapi.com/v1/airports",
+    "preferred_routes": "https://api.aviationapi.com/v1/preferred-routes",
+    "weather_metar": "https://api.aviationapi.com/v1/weather/metar",
+    "weather_taf": "https://api.aviationapi.com/v1/weather/taf",
+    "vatsim_pilots": "https://api.aviationapi.com/v1/vatsim/pilots",
+    "vatsim_controllers": "https://api.aviationapi.com/v1/vatsim/controllers",
 }
+
+# Streamlit Layout
+st.title("Aviation Data Dashboard")
+
+# Sidebar for user inputs
+st.sidebar.header("User Inputs")
+
+# API Selection
+api_choice = st.sidebar.selectbox("Choose API", list(API_ENDPOINTS.keys()))
+
+# Dynamic Inputs based on API choice
+if api_choice in ["vatsim_pilots", "vatsim_controllers"]:
+    airport_code = st.sidebar.text_input("Enter Airport Code (e.g., KATL)")
+    departure_checkbox = st.sidebar.checkbox("Show Departures")
+    arrival_checkbox = st.sidebar.checkbox("Show Arrivals")
+elif api_choice in ["weather_metar", "weather_taf"]:
+    airport_code = st.sidebar.text_input("Enter Airport Code (e.g., KAVL)")
 
 # Fetch data from API
 def fetch_data(endpoint, params=None):
     response = requests.get(API_ENDPOINTS[endpoint], params=params)
     return response.json()
 
-# Fetch data from APIs
-charts_data = fetch_data('charts')
-airports_data = fetch_data('airports')
-preferred_routes_data = fetch_data('preferred_routes')
-metar_data = fetch_data('weather_metar', {'apt': 'KAVL'})
-taf_data = fetch_data('weather_taf', {'apt': 'KAVL'})
-vatsim_pilots_data = fetch_data('vatsim_pilots', {'apt': 'KAVL'})
-vatsim_controllers_data = fetch_data('vatsim_controllers', {'fac': 'CLT'})
+# Display interactive table
+def display_interactive_table(data):
+    df = pd.DataFrame(data)
+    st.dataframe(df)
 
-# Streamlit app
-st.title("Aviation Dashboard")
+# Plotting charts
+def plot_charts(data):
+    # Example data for plotting
+    x = np.linspace(0, 10, 100)
+    y = np.sin(x)
 
-# Sidebar for API selection
-st.sidebar.header("API Selection")
-api_choice = st.sidebar.radio("Choose API Endpoint", list(API_ENDPOINTS.keys()))
+    # Line Chart
+    st.subheader("Line Chart")
+    st.line_chart(pd.Series(y, index=x))
 
-# Display API data based on user selection
-if api_choice == 'charts':
-    st.subheader("Charts Data")
-    st.write(charts_data)
+    # Area Chart
+    st.subheader("Area Chart")
+    st.area_chart(pd.Series(y, index=x))
 
-elif api_choice == 'airports':
-    st.subheader("Airports Data")
-    df_airports = pd.DataFrame(airports_data)
-    st.dataframe(df_airports)
+    # Bar Chart
+    st.subheader("Bar Chart")
+    plt.figure(figsize=(10, 5))
+    plt.bar(x[:10], y[:10])
+    st.pyplot()
 
-elif api_choice == 'preferred_routes':
-    st.subheader("Preferred Routes Data")
-    df_routes = pd.DataFrame(preferred_routes_data)
-    st.dataframe(df_routes)
+# Display Map
+def display_map(data):
+    # Example data for map
+    if data:
+        map_data = pd.DataFrame(data)
+        st.pydeck_chart(pdk.Deck(
+            initial_view_state=pdk.ViewState(
+                latitude=map_data['latitude'].mean(),
+                longitude=map_data['longitude'].mean(),
+                zoom=11
+            ),
+            layers=[
+                pdk.Layer(
+                    "ScatterplotLayer",
+                    data=map_data,
+                    get_position=["longitude", "latitude"],
+                    get_fill_color=[255, 0, 0, 140],
+                    get_radius=200,
+                )
+            ],
+        ))
 
-elif api_choice == 'weather_metar':
-    st.subheader("METAR Data")
-    st.write(metar_data)
+# Button widget
+if st.button("Fetch Data"):
+    params = {
+        "apt": airport_code,
+        "dep": 1 if departure_checkbox else None,
+        "arr": 1 if arrival_checkbox else None
+    } if api_choice in ["vatsim_pilots", "vatsim_controllers"] else {
+        "apt": airport_code
+    }
 
-elif api_choice == 'weather_taf':
-    st.subheader("TAF Data")
-    st.write(taf_data)
+    data = fetch_data(api_choice, params)
 
-elif api_choice == 'vatsim_pilots':
-    st.subheader("VATSIM Pilots Data")
-    df_pilots = pd.DataFrame(vatsim_pilots_data)
-    st.dataframe(df_pilots)
+    if data:
+        if isinstance(data, dict) and 'status' in data and data['status'] == 'error':
+            st.error(f"Error: {data['message']}")
+        else:
+            display_interactive_table(data)
+            plot_charts(data)
+            display_map(data)
+            st.success("Data fetched successfully!")
+    else:
+        st.warning("No data found.")
 
-elif api_choice == 'vatsim_controllers':
-    st.subheader("VATSIM Controllers Data")
-    df_controllers = pd.DataFrame(vatsim_controllers_data)
-    st.dataframe(df_controllers)
+# Sidebar widgets
+st.sidebar.subheader("Additional Widgets")
+radio_option = st.sidebar.radio("Select Option", ["Option 1", "Option 2"])
+selected_option = st.sidebar.selectbox("Choose an option", ["A", "B", "C"])
+multiselect_options = st.sidebar.multiselect("Select multiple options", ["X", "Y", "Z"])
+slider_value = st.sidebar.slider("Select a value", 0, 100, 50)
+text_input = st.sidebar.text_input("Enter text")
+number_input = st.sidebar.number_input("Enter a number", min_value=0, max_value=100, value=50)
 
-# Interactive Table
-st.subheader("Interactive Table")
-df = pd.DataFrame({
-    'Column 1': [1, 2, 3, 4],
-    'Column 2': ['A', 'B', 'C', 'D']
-})
-st.dataframe(df)
-
-# Charts
-st.subheader("Charts")
-chart_data = pd.DataFrame({
-    'x': pd.date_range(start='2023-01-01', periods=10),
-    'y1': range(10),
-    'y2': [x**2 for x in range(10)]
-})
-
-st.line_chart(chart_data.set_index('x')['y1'], use_container_width=True)
-st.area_chart(chart_data.set_index('x')[['y1', 'y2']], use_container_width=True)
-
-# Map with points
-st.subheader("Map")
-map_data = pd.DataFrame({
-    'lat': [37.7749, 34.0522, 40.7128],
-    'lon': [-122.4194, -118.2437, -74.0060],
-    'label': ['San Francisco', 'Los Angeles', 'New York']
-})
-st.map(map_data)
-
-# Widgets
-st.subheader("Widgets")
-if st.button("Click Me"):
-    st.success("Button clicked!")
-
-show_message = st.checkbox("Show message", value=True)
-if show_message:
-    st.info("Checkbox is checked!")
-
-# Additional widgets
-st.radio("Choose one", ["Option 1", "Option 2", "Option 3"])
-st.selectbox("Select an option", ["Option A", "Option B", "Option C"])
-st.multiselect("Select multiple options", ["Option X", "Option Y", "Option Z"])
-st.slider("Select a value", 0, 100, 50)
-st.text_input("Enter text")
-st.number_input("Enter a number", 0, 100, 25)
-st.text_area("Enter a long text")
-st.date_input("Select a date")
-st.time_input("Select a time")
-st.file_uploader("Upload a file")
-st.color_picker("Pick a color")
-
-# Error and Information messages
-st.warning("This is a warning message.")
-st.error("This is an error message.")
-
-# Expanders
-with st.expander("More Details"):
-    st.write("Here are more details.")
+st.sidebar.subheader("Information")
+st.sidebar.info("This sidebar contains various widgets and settings.")
