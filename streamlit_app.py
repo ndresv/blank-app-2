@@ -67,31 +67,33 @@ def display_airport_data(airport, show_map):
     st.area_chart(chart_data.set_index('Attribute')['Value'])
     st.bar_chart(chart_data.set_index('Attribute')['Value'])
 
-# Function to display charts data
+# Function to process and display charts data
 def display_charts_data(charts_data):
     st.header("Charts Data")
-    
     if not charts_data:
         st.warning("No charts data available.")
         return
 
+    # Iterate through groups and create tables and charts
     for group, data in charts_data.items():
+        st.subheader(f"Group: {group}")
         if isinstance(data, dict):
-            st.subheader(f"Group: {group}")
-            if group in ["1", "7"]:
-                for sub_group, sub_data in data.items():
-                    st.subheader(f"Sub-Group: {sub_group}")
-                    if isinstance(sub_data, list):
-                        charts_df = pd.DataFrame(sub_data)
-                        st.write(f"{sub_group} Table")
-                        st.dataframe(charts_df)
-
-            else:
-                st.subheader(f"Group: {group}")
-                if isinstance(data, list):
-                    charts_df = pd.DataFrame(data)
-                    st.write(f"{group} Table")
+            for subgroup, records in data.items():
+                st.write(f"Subgroup: {subgroup}")
+                if isinstance(records, list):
+                    charts_df = pd.DataFrame(records)
+                    st.write(f"{subgroup} Table")
                     st.dataframe(charts_df)
+
+                    # Display charts if relevant data is present
+                    if not charts_df.empty:
+                        st.line_chart(charts_df.set_index('state')['elevation'])
+                        st.area_chart(charts_df.set_index('state')['elevation'])
+                        st.bar_chart(charts_df.set_index('state')['elevation'])
+                else:
+                    st.warning(f"No records found for subgroup {subgroup}.")
+        else:
+            st.warning(f"Unexpected data format for group {group}.")
 
 # Function to display preferred routes data
 def display_preferred_routes(routes):
