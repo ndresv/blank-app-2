@@ -10,8 +10,13 @@ BASE_URL = "https://api.aviationapi.com/v1"
 
 # Helper function to fetch data from API
 def fetch_data(endpoint, params={}):
-    response = requests.get(f"{BASE_URL}/{endpoint}", params=params)
-    return response.json()
+    try:
+        response = requests.get(f"{BASE_URL}/{endpoint}", params=params)
+        response.raise_for_status()  # Check for HTTP errors
+        return response.json()
+    except requests.RequestException as e:
+        st.error(f"Error fetching data: {e}")
+        return None
 
 # Streamlit App
 def main():
@@ -22,81 +27,94 @@ def main():
     option = st.sidebar.selectbox("Choose an option", 
                                   ["Charts", "Airports", "Preferred Routes", "Weather METAR", "Weather TAF", "VATSIM Pilots", "VATSIM Controllers"])
 
-    if option == "Charts":
-        st.header("Charts")
-        data = fetch_data("charts")
-        st.write(data)
-        # Display data as interactive table
-        if data:
-            df = pd.DataFrame(data)
-            st.dataframe(df)
+    if option in ["Charts", "Airports", "Preferred Routes", "Weather METAR", "Weather TAF", "VATSIM Pilots", "VATSIM Controllers"]:
+        # Input for parameters
+        st.sidebar.header("Parameters")
+        if option in ["Airports", "Weather METAR", "Weather TAF"]:
+            airport_code = st.sidebar.text_input("Enter Airport ICAO or FAA Code", "")
+            if airport_code:
+                params = {"icao": airport_code} if option != "Preferred Routes" else {"search": airport_code}
+            else:
+                params = {}
+        else:
+            params = {}
 
-    elif option == "Airports":
-        st.header("Airports")
-        data = fetch_data("airports")
-        st.write(data)
-        # Display data as interactive table
-        if data:
-            df = pd.DataFrame(data)
-            st.dataframe(df)
+        # Fetch and display data
+        if option == "Charts":
+            st.header("Charts")
+            data = fetch_data("charts", params)
+            if data:
+                st.write(data)
+                # Display data as interactive table
+                df = pd.DataFrame(data)
+                st.dataframe(df)
 
-    elif option == "Preferred Routes":
-        st.header("Preferred Routes")
-        data = fetch_data("preferred-routes")
-        st.write(data)
-        # Display data as interactive table
-        if data:
-            df = pd.DataFrame(data)
-            st.dataframe(df)
+        elif option == "Airports":
+            st.header("Airports")
+            data = fetch_data("airports", params)
+            if data:
+                st.write(data)
+                # Display data as interactive table
+                df = pd.DataFrame(data)
+                st.dataframe(df)
 
-    elif option == "Weather METAR":
-        st.header("Weather METAR")
-        data = fetch_data("weather/metar")
-        st.write(data)
-        # Display data as interactive table
-        if data:
-            df = pd.DataFrame(data)
-            st.dataframe(df)
-        # Display a line chart for temperature
-        if data and 'temp' in data[0]:
-            temperatures = [float(item['temp']) for item in data]
-            times = [datetime.datetime.now() for _ in data]
-            fig, ax = plt.subplots()
-            ax.plot(times, temperatures, label="Temperature")
-            ax.set_xlabel("Time")
-            ax.set_ylabel("Temperature (°C)")
-            ax.set_title("Temperature Over Time")
-            ax.xaxis.set_major_locator(mdates.HourLocator())
-            ax.xaxis.set_major_formatter(mdates.DateFormatter('%H:%M'))
-            plt.xticks(rotation=45)
-            st.pyplot(fig)
+        elif option == "Preferred Routes":
+            st.header("Preferred Routes")
+            data = fetch_data("preferred-routes", params)
+            if data:
+                st.write(data)
+                # Display data as interactive table
+                df = pd.DataFrame(data)
+                st.dataframe(df)
 
-    elif option == "Weather TAF":
-        st.header("Weather TAF")
-        data = fetch_data("weather/taf")
-        st.write(data)
-        # Display data as interactive table
-        if data:
-            df = pd.DataFrame(data)
-            st.dataframe(df)
+        elif option == "Weather METAR":
+            st.header("Weather METAR")
+            data = fetch_data("weather/metar", params)
+            if data:
+                st.write(data)
+                # Display data as interactive table
+                df = pd.DataFrame(data)
+                st.dataframe(df)
+                # Display a line chart for temperature if available
+                if 'temp' in data[0]:
+                    temperatures = [float(item['temp']) for item in data]
+                    times = [datetime.datetime.now() for _ in data]
+                    fig, ax = plt.subplots()
+                    ax.plot(times, temperatures, label="Temperature")
+                    ax.set_xlabel("Time")
+                    ax.set_ylabel("Temperature (°C)")
+                    ax.set_title("Temperature Over Time")
+                    ax.xaxis.set_major_locator(mdates.HourLocator())
+                    ax.xaxis.set_major_formatter(mdates.DateFormatter('%H:%M'))
+                    plt.xticks(rotation=45)
+                    st.pyplot(fig)
 
-    elif option == "VATSIM Pilots":
-        st.header("VATSIM Pilots")
-        data = fetch_data("vatsim/pilots")
-        st.write(data)
-        # Display data as interactive table
-        if data:
-            df = pd.DataFrame(data)
-            st.dataframe(df)
+        elif option == "Weather TAF":
+            st.header("Weather TAF")
+            data = fetch_data("weather/taf", params)
+            if data:
+                st.write(data)
+                # Display data as interactive table
+                df = pd.DataFrame(data)
+                st.dataframe(df)
 
-    elif option == "VATSIM Controllers":
-        st.header("VATSIM Controllers")
-        data = fetch_data("vatsim/controllers")
-        st.write(data)
-        # Display data as interactive table
-        if data:
-            df = pd.DataFrame(data)
-            st.dataframe(df)
+        elif option == "VATSIM Pilots":
+            st.header("VATSIM Pilots")
+            data = fetch_data("vatsim/pilots", params)
+            if data:
+                st.write(data)
+                # Display data as interactive table
+                df = pd.DataFrame(data)
+                st.dataframe(df)
+
+        elif option == "VATSIM Controllers":
+            st.header("VATSIM Controllers")
+            data = fetch_data("vatsim/controllers", params)
+            if data:
+                st.write(data)
+                # Display data as interactive table
+                df = pd.DataFrame(data)
+                st.dataframe(df)
 
     # Add interactive widgets
     st.sidebar.header("Interactive Widgets")
