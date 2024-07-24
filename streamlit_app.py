@@ -2,114 +2,120 @@ import streamlit as st
 import requests
 import pandas as pd
 import matplotlib.pyplot as plt
-import pydeck as pdk
+import matplotlib.dates as mdates
+import datetime
 
-# Base URL for Aviation API
+# Base URL
 BASE_URL = "https://api.aviationapi.com/v1"
 
-def fetch_data(endpoint):
-    response = requests.get(f"{BASE_URL}/{endpoint}")
-    if response.status_code == 200:
-        return response.json()
-    else:
-        st.error(f"Failed to fetch data from {endpoint}")
-        return None
+# Helper function to fetch data from API
+def fetch_data(endpoint, params={}):
+    response = requests.get(f"{BASE_URL}/{endpoint}", params=params)
+    return response.json()
 
-# Define usability goals
-st.title("Aviation Data Dashboard")
+# Streamlit App
+def main():
+    st.title("FAA Aeronautical Charts and Airport Information")
 
-# Sidebar for navigation and interactive widgets
-st.sidebar.title("Navigation")
-selection = st.sidebar.radio("Select an option", [
-    "Airport Information",
-    "Weather Information",
-    "Charts",
-    "Preferred Routes",
-    "VATSIM Data"
-])
+    # Sidebar for navigation
+    st.sidebar.header("Navigation")
+    option = st.sidebar.selectbox("Choose an option", 
+                                  ["Charts", "Airports", "Preferred Routes", "Weather METAR", "Weather TAF", "VATSIM Pilots", "VATSIM Controllers"])
 
-if selection == "Airport Information":
-    st.sidebar.subheader("Airport Info")
-    airport_code = st.sidebar.text_input("Enter ICAO or IATA code", "KATL")
-    
-    if airport_code:
-        data = fetch_data(f"airports/{airport_code}")
+    if option == "Charts":
+        st.header("Charts")
+        data = fetch_data("charts")
+        st.write(data)
+        # Display data as interactive table
         if data:
-            st.subheader(f"Information for Airport: {airport_code}")
-            st.json(data)
-            # Displaying data in a table
-            df = pd.DataFrame([data])
+            df = pd.DataFrame(data)
             st.dataframe(df)
 
-elif selection == "Weather Information":
-    st.sidebar.subheader("Weather Info")
-    airport_code = st.sidebar.text_input("Enter ICAO or IATA code for weather", "KATL")
-    
-    if airport_code:
-        metar_data = fetch_data(f"weather/metar/{airport_code}")
-        taf_data = fetch_data(f"weather/taf/{airport_code}")
-        
-        if metar_data and taf_data:
-            st.subheader(f"Weather Data for Airport: {airport_code}")
-            st.write("METAR Data")
-            st.json(metar_data)
-            st.write("TAF Data")
-            st.json(taf_data)
+    elif option == "Airports":
+        st.header("Airports")
+        data = fetch_data("airports")
+        st.write(data)
+        # Display data as interactive table
+        if data:
+            df = pd.DataFrame(data)
+            st.dataframe(df)
 
-elif selection == "Charts":
-    st.sidebar.subheader("Charts")
-    charts_data = fetch_data("charts")
-    
-    if charts_data:
-        st.subheader("Charts Data")
-        st.write(charts_data)
+    elif option == "Preferred Routes":
+        st.header("Preferred Routes")
+        data = fetch_data("preferred-routes")
+        st.write(data)
+        # Display data as interactive table
+        if data:
+            df = pd.DataFrame(data)
+            st.dataframe(df)
 
-elif selection == "Preferred Routes":
-    st.sidebar.subheader("Preferred Routes")
-    preferred_routes_data = fetch_data("preferred-routes")
-    
-    if preferred_routes_data:
-        st.subheader("Preferred Routes Data")
-        st.write(preferred_routes_data)
+    elif option == "Weather METAR":
+        st.header("Weather METAR")
+        data = fetch_data("weather/metar")
+        st.write(data)
+        # Display data as interactive table
+        if data:
+            df = pd.DataFrame(data)
+            st.dataframe(df)
+        # Display a line chart for temperature
+        if data and 'temp' in data[0]:
+            temperatures = [float(item['temp']) for item in data]
+            times = [datetime.datetime.now() for _ in data]
+            fig, ax = plt.subplots()
+            ax.plot(times, temperatures, label="Temperature")
+            ax.set_xlabel("Time")
+            ax.set_ylabel("Temperature (°C)")
+            ax.set_title("Temperature Over Time")
+            ax.xaxis.set_major_locator(mdates.HourLocator())
+            ax.xaxis.set_major_formatter(mdates.DateFormatter('%H:%M'))
+            plt.xticks(rotation=45)
+            st.pyplot(fig)
 
-elif selection == "VATSIM Data":
-    st.sidebar.subheader("VATSIM Data")
-    vatsim_pilots = fetch_data("vatsim/pilots")
-    vatsim_controllers = fetch_data("vatsim/controllers")
-    
-    if vatsim_pilots and vatsim_controllers:
-        st.subheader("VATSIM Pilots Data")
-        st.write(vatsim_pilots)
-        st.subheader("VATSIM Controllers Data")
-        st.write(vatsim_controllers)
+    elif option == "Weather TAF":
+        st.header("Weather TAF")
+        data = fetch_data("weather/taf")
+        st.write(data)
+        # Display data as interactive table
+        if data:
+            df = pd.DataFrame(data)
+            st.dataframe(df)
 
-# Sample chart and map
-st.subheader("Sample Visualization")
-data = {
-    "Airport": ["KATL", "KJFK", "KLAX"],
-    "Flights": [1200, 1500, 1100]
-}
-df = pd.DataFrame(data)
+    elif option == "VATSIM Pilots":
+        st.header("VATSIM Pilots")
+        data = fetch_data("vatsim/pilots")
+        st.write(data)
+        # Display data as interactive table
+        if data:
+            df = pd.DataFrame(data)
+            st.dataframe(df)
 
-st.write("Bar Chart of Flights")
-st.bar_chart(df.set_index("Airport"))
+    elif option == "VATSIM Controllers":
+        st.header("VATSIM Controllers")
+        data = fetch_data("vatsim/controllers")
+        st.write(data)
+        # Display data as interactive table
+        if data:
+            df = pd.DataFrame(data)
+            st.dataframe(df)
 
-# Map visualization
-st.write("Sample Map")
-map_data = pd.DataFrame({
-    'lat': [33.6367, 40.6413, 33.9416],
-    'lon': [-84.4279, -73.7781, -118.4085],
-    'Airport': ["ATL", "JFK", "LAX"]
-})
-st.map(map_data)
+    # Add interactive widgets
+    st.sidebar.header("Interactive Widgets")
+    if st.sidebar.button('Show Info'):
+        st.info("This is an information message")
 
-# Widgets
-if st.button("Show More Info"):
-    st.info("Showing more detailed information.")
+    if st.sidebar.checkbox('Show Warning'):
+        st.warning("This is a warning message")
 
-if st.checkbox("Show Map"):
-    st.map(map_data)
+    if st.sidebar.checkbox('Show Error'):
+        st.error("This is an error message")
 
-# Success and error messages
-st.success("Data successfully loaded.")
-st.error("Error in loading data.")
+    if st.sidebar.radio('Select an Option', ['Option 1', 'Option 2']) == 'Option 1':
+        st.success("You selected Option 1")
+
+    st.sidebar.selectbox('Selectbox Example', ['Choice 1', 'Choice 2'])
+    st.sidebar.slider('Slider Example', 0, 100, 50)
+    st.sidebar.text_input('Text Input Example')
+    st.sidebar.color_picker('Color Picker Example')
+
+if __name__ == "__main__":
+    main()
