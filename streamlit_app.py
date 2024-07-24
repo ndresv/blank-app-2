@@ -98,9 +98,17 @@ def display_preferred_routes(routes):
 def display_vatsim_pilots(pilots):
     st.header("VATSIM Pilots")
     if pilots:
-        pilots_df = pd.DataFrame(pilots)
-        st.write("VATSIM Pilots Table")
-        st.dataframe(pilots_df)
+        # Inspect the structure of the data
+        st.write("Raw VATSIM Pilots Data")
+        st.json(pilots)
+
+        # If the data is a list of dictionaries, convert it to DataFrame
+        if isinstance(pilots, list) and all(isinstance(item, dict) for item in pilots):
+            pilots_df = pd.DataFrame(pilots)
+            st.write("VATSIM Pilots Table")
+            st.dataframe(pilots_df)
+        else:
+            st.warning("Unexpected data format for VATSIM pilots.")
     else:
         st.warning("No VATSIM pilots data available.")
 
