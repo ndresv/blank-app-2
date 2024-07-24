@@ -7,7 +7,6 @@ import matplotlib.pyplot as plt
 API_ENDPOINTS = {
     'Airports': 'https://api.aviationapi.com/v1/airports?apt=',
     'Preferred Routes': 'https://api.aviationapi.com/v1/preferred-routes',
-    'Weather METAR': 'https://api.aviationapi.com/v1/weather/metar?apt=',
     'VATSIM Pilots': 'https://api.aviationapi.com/v1/vatsim/pilots',
     'Charts': 'https://api.aviationapi.com/v1/charts?apt={icao}&group={group}'
 }
