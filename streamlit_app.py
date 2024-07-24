@@ -44,7 +44,7 @@ def display_airport_data(airport):
     st.write(f"Control Tower: {airport.get('control_tower', 'N/A')}")
     st.write(f"UNICOM Frequency: {airport.get('unicom', 'N/A')}")
 
-     if show_map:
+    if show_map:
         # Convert latitude and longitude to decimal degrees
         lat_dd = dms_to_dd(airport.get('latitude', '0-0-0.0N'))
         lon_dd = dms_to_dd(airport.get('longitude', '0-0-0.0E'))
