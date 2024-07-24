@@ -23,7 +23,12 @@ def fetch_data(api_name, endpoint, params=None):
 
 # Convert DMS to Decimal Degrees
 def dms_to_dd(dms):
-    degrees, minutes, seconds, direction = float(dms[:-1].split('-')[0]), float(dms.split('-')[1]), float(dms.split('-')[2]), dms[-1]
+    parts = dms[:-1].split('-')
+    degrees = float(parts[0])
+    minutes = float(parts[1])
+    seconds = float(parts[2])
+    direction = dms[-1]
+    
     dd = degrees + minutes / 60 + seconds / 3600
     if direction in ['W', 'S']:
         dd *= -1
@@ -56,9 +61,9 @@ def display_airport_data(airport):
     })
 
     st.write("Charts")
-    st.line_chart(chart_data['Value'])
-    st.area_chart(chart_data['Value'])
-    st.bar_chart(chart_data['Value'])
+    st.line_chart(chart_data.set_index('Attribute')['Value'])
+    st.area_chart(chart_data.set_index('Attribute')['Value'])
+    st.bar_chart(chart_data.set_index('Attribute')['Value'])
 
 # Function to display preferred routes data
 def display_preferred_routes(routes):
