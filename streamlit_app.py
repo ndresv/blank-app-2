@@ -1,7 +1,6 @@
 import streamlit as st
 import requests
 import pandas as pd
-import matplotlib.pyplot as plt
 
 # API endpoints
 API_ENDPOINTS = {
@@ -81,8 +80,10 @@ def display_charts_data(charts_data):
     st.header("Charts Data")
     if charts_data:
         for group in charts_data.keys():
-            st.subheader(f"Group: {CHART_GROUPS.get(group, 'Unknown Group')}")
+            group_description = CHART_GROUPS.get(group, 'Unknown Group')
+            st.subheader(f"Group: {group_description}")
             charts_df = pd.DataFrame(charts_data[group])
+            st.write(f"{group_description} Table")
             st.dataframe(charts_df)
     else:
         st.warning("No charts data available.")
@@ -151,8 +152,15 @@ elif api_option == 'VATSIM Pilots':
 elif api_option == 'Charts':
     icao_code = st.text_input("Enter ICAO code (e.g., KMIA)")
     group_description = st.selectbox("Select Chart Group", list(CHART_GROUPS.values()))
-    group = [key for key, value in CHART_GROUPS.items() if value == group_description][0]
-    if st.button("Fetch Charts Data"):
+    
+    # Find the corresponding group key
+    group = [key for key, value in CHART_GROUPS.items() if value == group_description]
+    if group:
+        group = group[0]
+    else:
+        st.warning("Selected chart group is unknown.")
+        group = None
+    
+    if group and st.button("Fetch Charts Data"):
         data = fetch_data('Charts', API_ENDPOINTS['Charts'].format(icao=icao_code, group=group))
         display_charts_data(data)
-
