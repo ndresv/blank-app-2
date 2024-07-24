@@ -1,143 +1,189 @@
 import streamlit as st
 import requests
 import pandas as pd
-import matplotlib.pyplot as plt
-import numpy as np
 import pydeck as pdk
+import matplotlib.pyplot as plt
 
-# Streamlit Page Configuration
-st.set_page_config(page_title="Aviation Data Dashboard", layout="wide")
+# Define API endpoints
+API_BASE_URL = "https://api.aviationapi.com/v1"
 
-# Sidebar - API Options
-st.sidebar.header("API Options")
-api_option = st.sidebar.radio("Choose an API", ["Airports", "Weather", "VATSIM", "Charts", "Preferred Routes"])
-
-# Function to fetch data from API
-def fetch_data(api_url, params=None):
-    try:
-        response = requests.get(api_url, params=params)
-        response.raise_for_status()
+# Function to make API requests
+def fetch_data(endpoint, params=None):
+    response = requests.get(f"{API_BASE_URL}/{endpoint}", params=params)
+    if response.status_code == 200:
         return response.json()
-    except requests.exceptions.RequestException as e:
-        st.error(f"Error fetching data: {e}")
+    else:
+        st.error(f"Error {response.status_code}: {response.json().get('message', 'Unknown error')}")
         return None
 
-# Function to display interactive table
-def display_interactive_table(data):
-    df = pd.DataFrame(data)
-    st.dataframe(df)
+# Convert latitude and longitude from string to decimal degrees
+def convert_coordinates(lat_str, lon_str):
+    lat = float(lat_str.split('-')[0]) + float(lat_str.split('-')[1][:-1]) / 60
+    lon = float(lon_str.split('-')[0]) + float(lon_str.split('-')[1][:-1]) / 60
+    return lat, lon
 
-# Function to display line and area charts
-def display_charts(data):
-    df = pd.DataFrame(data)
-    st.line_chart(df['value'])
-    st.area_chart(df['value'])
-    st.bar_chart(df['value'])
+# Streamlit app
+def main():
+    st.title("Aviation Data Viewer")
 
-# Function to display map
-def display_map(lat, lon):
-    data = pd.DataFrame({
-        'lat': [lat],
-        'lon': [lon]
-    })
-    st.pydeck_chart(pdk.Deck(
-        initial_view_state=pdk.ViewState(latitude=lat, longitude=lon, zoom=10),
-        layers=[pdk.Layer(
-            'ScatterplotLayer',
-            data=data,
-            get_position=['lon', 'lat'],
-            get_color=[255, 0, 0, 140],
-            get_radius=1000
-        )]
-    ))
+    # Sidebar for navigation
+    option = st.sidebar.selectbox("Choose an option", [
+        "Charts",
+        "Airports",
+        "Preferred Routes",
+        "Weather METAR",
+        "Weather TAF",
+        "VATSIM Pilots",
+        "VATSIM Controllers"
+    ])
 
-# Airport data
-if api_option == "Airports":
-    st.header("Airport Data")
-    airport_code = st.text_input("Enter ICAO or FAA code:")
+    # Widgets
+    st.sidebar.subheader("Filter Options")
+    filter_choice = st.sidebar.radio("Select filter type:", ["None", "Departures", "Arrivals"])
+    date_filter = st.sidebar.date_input("Select date:", pd.to_datetime("today"))
+
+    if option == "Charts":
+        st.header("Charts")
+        icao = st.text_input("Enter ICAO Code (e.g., KATL)")
+        if st.button("Fetch Charts"):
+            data = fetch_data("charts", {"apt": icao})
+            if data:
+                df = pd.DataFrame(data)
+                st.dataframe(df)
+                st.success("Charts data fetched successfully!")
+
+                # Example Line Chart
+                if 'charts' in data:
+                    df_charts = pd.DataFrame(data['charts'])
+                    st.line_chart(df_charts[['altitude', 'heading']])  # Adjust columns as needed
+                
+                # Example Area Chart
+                if 'weather' in data:
+                    df_weather = pd.DataFrame(data['weather'])
+                    st.area_chart(df_weather[['temperature', 'wind_speed']])  # Adjust columns as needed
     
-    if airport_code:
-        data = fetch_data(f"https://api.aviationapi.com/v1/airports?apt={airport_code}")
-        if data:
-            # Check if the response is a dictionary with keys indicating data
-            if isinstance(data, dict) and 'data' in data:
-                airport_data = data['data']
-            else:
-                airport_data = data
-            
-            if isinstance(airport_data, list):
-                # Use the first item from the list for map and table
-                airport_info = airport_data[0]
-                display_interactive_table(airport_data)
+    elif option == "Airports":
+        st.header("Airports")
+        icao = st.text_input("Enter ICAO Code (e.g., KMIA)")
+        if st.button("Fetch Airport Data"):
+            data = fetch_data("airports", {"apt": icao})
+            if data:
+                # Convert data to DataFrame and display
+                df = pd.DataFrame([data])
+                st.dataframe(df)  # Interactive table
+                st.success("Airport data fetched successfully!")
 
-                # Map visualization
-                try:
-                    lat = float(airport_info['latitude'].replace("N", "").replace("S", ""))
-                    lon = float(airport_info['longitude'].replace("W", "").replace("E", ""))
-                    if "S" in airport_info['latitude']:
-                        lat = -lat
-                    if "W" in airport_info['longitude']:
-                        lon = -lon
-                    display_map(lat, lon)
-                except KeyError as e:
-                    st.error(f"KeyError: {e} in airport data")
-                except ValueError as e:
-                    st.error(f"ValueError: {e} when converting latitude/longitude")
+                # Extract and convert latitude and longitude
+                lat, lon = convert_coordinates(data['latitude'], data['longitude'])
+                
+                # Map Visualization
+                st.pydeck_chart(pdk.Deck(
+                    initial_view_state=pdk.ViewState(
+                        latitude=lat,
+                        longitude=lon,
+                        zoom=11,
+                        pitch=50
+                    ),
+                    layers=[
+                        pdk.Layer(
+                            'ScatterplotLayer',
+                            data=pd.DataFrame({
+                                'lat': [lat],
+                                'lon': [lon],
+                                'label': [data['facility_name']]
+                            }),
+                            get_position=['lon', 'lat'],
+                            get_color=[255, 0, 0],
+                            get_radius=1000
+                        )
+                    ]
+                ))
 
-                # Display charts
-                display_charts(airport_data)
-            else:
-                st.error("Airport data is not in the expected format.")
+    elif option == "Preferred Routes":
+        st.header("Preferred Routes")
+        departure = st.text_input("Enter Departure ICAO (e.g., KATL)")
+        arrival = st.text_input("Enter Arrival ICAO (e.g., KDFW)")
+        if st.button("Fetch Preferred Routes"):
+            data = fetch_data("preferred-routes", {"dep": departure, "arr": arrival})
+            if data:
+                df = pd.DataFrame(data)
+                st.dataframe(df)  # Interactive table
+                st.info("Preferred routes data fetched successfully!")
 
-# Weather data
-elif api_option == "Weather":
-    st.header("Weather Data")
-    airport_code = st.text_input("Enter ICAO code for METAR/TAF:")
-    
-    if airport_code:
-        metar_data = fetch_data(f"https://api.aviationapi.com/v1/weather/metar?apt={airport_code}")
-        taf_data = fetch_data(f"https://api.aviationapi.com/v1/weather/taf?apt={airport_code}")
+                # Example Bar Chart
+                if not df.empty:
+                    st.bar_chart(df.set_index('route_id')['distance'])
 
-        if metar_data:
-            st.success(f"METAR data fetched for {airport_code}")
-            st.json(metar_data)
-        
-        if taf_data:
-            st.success(f"TAF data fetched for {airport_code}")
-            st.json(taf_data)
+    elif option == "Weather METAR":
+        st.header("Weather METAR")
+        icao = st.text_input("Enter ICAO Code (e.g., KAVL)")
+        if st.button("Fetch METAR"):
+            data = fetch_data("weather/metar", {"apt": icao})
+            if data:
+                st.json(data)
+                # Example Line Chart for METAR data
+                if 'temperature' in data:
+                    df_temp = pd.DataFrame(data['temperature'])
+                    st.line_chart(df_temp[['temperature']])
 
-# VATSIM data
-elif api_option == "VATSIM":
-    st.header("VATSIM Data")
-    facility_code = st.text_input("Enter VATSIM facility code:")
-    
-    if facility_code:
-        pilots_data = fetch_data(f"https://api.aviationapi.com/v1/vatsim/pilots?fac={facility_code}")
-        controllers_data = fetch_data(f"https://api.aviationapi.com/v1/vatsim/controllers?fac={facility_code}")
+    elif option == "Weather TAF":
+        st.header("Weather TAF")
+        icao = st.text_input("Enter ICAO Code (e.g., KAVL)")
+        if st.button("Fetch TAF"):
+            data = fetch_data("weather/taf", {"apt": icao})
+            if data:
+                st.json(data)
+                # Example Area Chart for TAF data
+                if 'wind_speed' in data:
+                    df_taf = pd.DataFrame(data['wind_speed'])
+                    st.area_chart(df_taf[['wind_speed']])
 
-        if pilots_data:
-            st.success(f"VATSIM pilots data fetched for {facility_code}")
-            display_interactive_table(pilots_data)
-        
-        if controllers_data:
-            st.success(f"VATSIM controllers data fetched for {facility_code}")
-            display_interactive_table(controllers_data)
+    elif option == "VATSIM Pilots":
+        st.header("VATSIM Pilots")
+        airport = st.text_input("Enter Airport ICAO (e.g., KATL)")
+        dep = st.checkbox("Show only departures")
+        arr = st.checkbox("Show only arrivals")
+        if st.button("Fetch VATSIM Pilots"):
+            params = {
+                "apt": airport,
+                "dep": 1 if dep else None,
+                "arr": 1 if arr else None
+            }
+            data = fetch_data("vatsim/pilots", params)
+            if data:
+                df = pd.DataFrame(data)
+                st.dataframe(df)  # Interactive table
+                st.warning("VATSIM pilots data fetched successfully!")
 
-# Charts data
-elif api_option == "Charts":
-    st.header("Charts Data")
-    chart_code = st.text_input("Enter chart code:")
-    
-    if chart_code:
-        data = fetch_data(f"https://api.aviationapi.com/v1/charts?apt={chart_code}")
-        if data:
-            st.success(f"Chart data fetched for {chart_code}")
-            st.json(data)
+                # Example Map for VATSIM Pilots
+                if not df.empty:
+                    st.pydeck_chart(pdk.Deck(
+                        initial_view_state=pdk.ViewState(
+                            latitude=df['lat'].mean(),
+                            longitude=df['lon'].mean(),
+                            zoom=10,
+                            pitch=50
+                        ),
+                        layers=[
+                            pdk.Layer(
+                                'ScatterplotLayer',
+                                data=df,
+                                get_position=['lon', 'lat'],
+                                get_color=[0, 0, 255],
+                                get_radius=500
+                            )
+                        ]
+                    ))
 
-# Preferred Routes data
-elif api_option == "Preferred Routes":
-    st.header("Preferred Routes Data")
-    routes_data = fetch_data("https://api.aviationapi.com/v1/preferred-routes")
-    if routes_data:
-        st.success("Preferred routes data fetched")
-        display_interactive_table(routes_data)
+    elif option == "VATSIM Controllers":
+        st.header("VATSIM Controllers")
+        facility = st.text_input("Enter Facility (e.g., CLT)")
+        if st.button("Fetch VATSIM Controllers"):
+            data = fetch_data("vatsim/controllers", {"fac": facility})
+            if data:
+                df = pd.DataFrame(data)
+                st.dataframe(df)  # Interactive table
+                st.success("VATSIM controllers data fetched successfully!")
+
+if __name__ == "__main__":
+    main()
