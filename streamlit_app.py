@@ -56,11 +56,11 @@ def main():
                 st.dataframe(df)
 
                 # Line Chart
-                if not df.empty:
+                if not df.empty and 'altitude' in df.columns and 'heading' in df.columns:
                     st.line_chart(df[['altitude', 'heading']])  # Adjust columns as needed
 
                 # Area Chart
-                if 'weather' in data:
+                if 'weather' in data and 'temperature' in data['weather']:
                     df_weather = pd.DataFrame(data['weather'])
                     st.area_chart(df_weather[['temperature', 'wind_speed']])  # Adjust columns as needed
 
@@ -73,39 +73,44 @@ def main():
                 # Debugging: Inspect the data
                 st.write("Airport data:", data)
 
-                # Convert latitude and longitude to decimal format
-                lat_deg, lat_min = data['latitude'].split('-')[:2]
-                lon_deg, lon_min = data['longitude'].split('-')[:2]
-                latitude = convert_to_decimal(lat_deg, lat_min, data['latitude'][-1])
-                longitude = convert_to_decimal(lon_deg, lon_min, data['longitude'][-1])
+                try:
+                    # Convert latitude and longitude to decimal format
+                    lat_deg, lat_min = data['latitude'].split('-')[:2]
+                    lon_deg, lon_min = data['longitude'].split('-')[:2]
+                    latitude = convert_to_decimal(lat_deg, lat_min, data['latitude'][-1])
+                    longitude = convert_to_decimal(lon_deg, lon_min, data['longitude'][-1])
 
-                airport_location = {
-                    'lat': [latitude],
-                    'lon': [longitude],
-                    'label': [data['facility_name']]
-                }
-                df_location = pd.DataFrame(airport_location)
-                
-                st.pydeck_chart(pdk.Deck(
-                    initial_view_state=pdk.ViewState(
-                        latitude=latitude,
-                        longitude=longitude,
-                        zoom=11,
-                        pitch=50
-                    ),
-                    layers=[
-                        pdk.Layer(
-                            'ScatterplotLayer',
-                            data=df_location,
-                            get_position=['lon', 'lat'],
-                            get_color=[255, 0, 0],
-                            get_radius=1000
-                        )
-                    ]
-                ))
-                
-                df = pd.DataFrame([data])
-                st.dataframe(df)
+                    airport_location = {
+                        'lat': [latitude],
+                        'lon': [longitude],
+                        'label': [data['facility_name']]
+                    }
+                    df_location = pd.DataFrame(airport_location)
+                    
+                    st.pydeck_chart(pdk.Deck(
+                        initial_view_state=pdk.ViewState(
+                            latitude=latitude,
+                            longitude=longitude,
+                            zoom=11,
+                            pitch=50
+                        ),
+                        layers=[
+                            pdk.Layer(
+                                'ScatterplotLayer',
+                                data=df_location,
+                                get_position=['lon', 'lat'],
+                                get_color=[255, 0, 0],
+                                get_radius=1000
+                            )
+                        ]
+                    ))
+                    
+                    df = pd.DataFrame([data])
+                    st.dataframe(df)
+                except KeyError as e:
+                    st.error(f"Key error: {e}")
+                except Exception as e:
+                    st.error(f"An error occurred: {e}")
 
     elif option == "Preferred Routes":
         st.header("Preferred Routes")
@@ -121,7 +126,7 @@ def main():
                 st.dataframe(df)
 
                 # Bar Chart
-                if not df.empty:
+                if not df.empty and 'route_id' in df.columns and 'distance' in df.columns:
                     st.bar_chart(df.set_index('route_id')['distance'])
 
     elif option == "Weather METAR":
