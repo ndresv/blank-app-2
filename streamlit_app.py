@@ -96,13 +96,34 @@ def display_vatsim_pilots(pilots):
         st.warning("No VATSIM pilots data available.")
 
 # Function to display chart data
-def display_chart_data(charts):
-    st.header("Chart Data")
+def display_chart_data(charts, group):
+    st.header("Charts Data")
     if charts:
-        # Convert chart data to DataFrame for display
-        chart_df = pd.DataFrame(charts)
-        st.write("Charts Table")
-        st.dataframe(chart_df)
+        charts_df = pd.DataFrame(charts)
+        
+        if group == 1:
+            st.subheader("General, Departures, Arrivals, Approaches")
+            general_df = charts_df[charts_df['group'] == 1]
+            departures_df = charts_df[charts_df['group'] == 4]
+            arrivals_df = charts_df[charts_df['group'] == 5]
+            approaches_df = charts_df[charts_df['group'] == 6]
+
+            st.write("General Table")
+            st.dataframe(general_df[['state', 'state_full', 'city', 'facility_name', 'military']])
+            
+            st.write("Departures Table")
+            st.dataframe(departures_df[['state', 'state_full', 'city', 'facility_name', 'military']])
+            
+            st.write("Arrivals Table")
+            st.dataframe(arrivals_df[['state', 'state_full', 'city', 'facility_name', 'military']])
+            
+            st.write("Approaches Table")
+            st.dataframe(approaches_df[['state', 'state_full', 'city', 'facility_name', 'military']])
+        
+        else:
+            st.write(f"Group {group} Data Table")
+            st.dataframe(charts_df[['state', 'state_full', 'city', 'facility_name', 'military']])
+            
     else:
         st.warning("No chart data available.")
 
@@ -142,12 +163,10 @@ elif api_option == 'VATSIM Pilots':
 
 elif api_option == 'Charts':
     icao_code = st.text_input("Enter ICAO code (e.g., KMIA)")
-    group = st.selectbox("Select Chart Group", 
-                         options=[1, 2, 3, 4, 5, 6, 7],
-                         format_func=lambda x: f"Group {x}")
+    group = st.selectbox("Select Chart Group", options=[1, 2, 3, 4, 5, 6, 7])
     if st.button("Fetch Chart Data"):
         data = fetch_data(api_option, API_ENDPOINTS['Charts'].format(icao=icao_code, group=group))
-        display_chart_data(data)
+        display_chart_data(data, group)
 
 st.sidebar.header("Additional Features")
 show_expanded = st.sidebar.checkbox("Show Expanded")
