@@ -95,37 +95,27 @@ def display_vatsim_pilots(pilots):
     else:
         st.warning("No VATSIM pilots data available.")
 
-# Function to display chart data
-def display_chart_data(charts, group):
-    st.header("Charts Data")
-    if charts:
-        charts_df = pd.DataFrame(charts)
-        
-        if group == 1:
-            st.subheader("General, Departures, Arrivals, Approaches")
-            general_df = charts_df[charts_df['group'] == 1]
-            departures_df = charts_df[charts_df['group'] == 4]
-            arrivals_df = charts_df[charts_df['group'] == 5]
-            approaches_df = charts_df[charts_df['group'] == 6]
+# Function to display charts data
+def display_charts_data(icao_code, group):
+    st.header(f"Charts for ICAO Code: {icao_code}")
 
-            st.write("General Table")
-            st.dataframe(general_df[['state', 'state_full', 'city', 'facility_name', 'military']])
-            
-            st.write("Departures Table")
-            st.dataframe(departures_df[['state', 'state_full', 'city', 'facility_name', 'military']])
-            
-            st.write("Arrivals Table")
-            st.dataframe(arrivals_df[['state', 'state_full', 'city', 'facility_name', 'military']])
-            
-            st.write("Approaches Table")
-            st.dataframe(approaches_df[['state', 'state_full', 'city', 'facility_name', 'military']])
+    charts_data = fetch_data('Charts', API_ENDPOINTS['Charts'].format(icao=icao_code, group=group))
+    
+    if charts_data:
+        grouped_data = {}
+        for chart in charts_data:
+            grp = chart.get('group')
+            if grp not in grouped_data:
+                grouped_data[grp] = []
+            grouped_data[grp].append(chart)
         
-        else:
-            st.write(f"Group {group} Data Table")
-            st.dataframe(charts_df[['state', 'state_full', 'city', 'facility_name', 'military']])
-            
+        for grp, data in grouped_data.items():
+            st.subheader(f"Group {grp} Charts")
+            df = pd.DataFrame(data)
+            st.write(f"Displaying charts for group {grp}")
+            st.dataframe(df)
     else:
-        st.warning("No chart data available.")
+        st.warning("No charts data available.")
 
 # Main app logic
 st.title("Aviation Data Explorer")
@@ -163,10 +153,9 @@ elif api_option == 'VATSIM Pilots':
 
 elif api_option == 'Charts':
     icao_code = st.text_input("Enter ICAO code (e.g., KMIA)")
-    group = st.selectbox("Select Chart Group", options=[1, 2, 3, 4, 5, 6, 7])
-    if st.button("Fetch Chart Data"):
-        data = fetch_data(api_option, API_ENDPOINTS['Charts'].format(icao=icao_code, group=group))
-        display_chart_data(data, group)
+    group = st.selectbox("Select Chart Group", [1, 2, 3, 4, 5, 6, 7])
+    if st.button("Fetch Charts Data"):
+        display_charts_data(icao_code, group)
 
 st.sidebar.header("Additional Features")
 show_expanded = st.sidebar.checkbox("Show Expanded")
