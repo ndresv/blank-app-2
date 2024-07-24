@@ -69,26 +69,23 @@ def display_airport_data(airport, show_map):
 
 # Function to display charts data
 def display_charts_data(data):
-    if 'General' in data:
-        st.header("General Charts")
-        general_df = pd.DataFrame(data['General'])
-        st.write("General Table")
-        st.dataframe(general_df)
-    if 'Departures' in data:
-        st.header("Departures Charts")
-        departures_df = pd.DataFrame(data['Departures'])
-        st.write("Departures Table")
-        st.dataframe(departures_df)
-    if 'Arrivals' in data:
-        st.header("Arrivals Charts")
-        arrivals_df = pd.DataFrame(data['Arrivals'])
-        st.write("Arrivals Table")
-        st.dataframe(arrivals_df)
-    if 'Approaches' in data:
-        st.header("Approaches Charts")
-        approaches_df = pd.DataFrame(data['Approaches'])
-        st.write("Approaches Table")
-        st.dataframe(approaches_df)
+    if data is None:
+        st.warning("No data received.")
+        return
+
+    # Verify the structure of the data
+    st.write("Raw Data Output:", data)  # Debugging statement
+
+    # Separate data based on the groupings
+    groupings = ['General', 'Departures', 'Arrivals', 'Approaches']
+    for group in groupings:
+        if group in data:
+            st.header(f"{group} Charts")
+            df = pd.DataFrame(data[group])
+            st.write(f"{group} Table")
+            st.dataframe(df)
+        else:
+            st.warning(f"No {group} data available.")
 
 # Function to display preferred routes data
 def display_preferred_routes(routes):
