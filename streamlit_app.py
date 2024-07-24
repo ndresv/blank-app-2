@@ -40,7 +40,16 @@ def display_map(lat, lon):
         'lat': [lat],
         'lon': [lon]
     })
-    st.map(data)
+    st.pydeck_chart(pdk.Deck(
+        initial_view_state=pdk.ViewState(latitude=lat, longitude=lon, zoom=10),
+        layers=[pdk.Layer(
+            'ScatterplotLayer',
+            data=data,
+            get_position=['lon', 'lat'],
+            get_color=[255, 0, 0, 140],
+            get_radius=1000
+        )]
+    ))
 
 # Airport data
 if api_option == "Airports":
@@ -50,16 +59,35 @@ if api_option == "Airports":
     if airport_code:
         data = fetch_data(f"https://api.aviationapi.com/v1/airports?apt={airport_code}")
         if data:
-            st.success(f"Data fetched for {airport_code}")
-            display_interactive_table(data)
+            # Check if the response is a dictionary with keys indicating data
+            if isinstance(data, dict) and 'data' in data:
+                airport_data = data['data']
+            else:
+                airport_data = data
+            
+            if isinstance(airport_data, list):
+                # Use the first item from the list for map and table
+                airport_info = airport_data[0]
+                display_interactive_table(airport_data)
 
-            # Map visualization
-            lat = data[0]['latitude']
-            lon = data[0]['longitude']
-            display_map(lat, lon)
+                # Map visualization
+                try:
+                    lat = float(airport_info['latitude'].replace("N", "").replace("S", ""))
+                    lon = float(airport_info['longitude'].replace("W", "").replace("E", ""))
+                    if "S" in airport_info['latitude']:
+                        lat = -lat
+                    if "W" in airport_info['longitude']:
+                        lon = -lon
+                    display_map(lat, lon)
+                except KeyError as e:
+                    st.error(f"KeyError: {e} in airport data")
+                except ValueError as e:
+                    st.error(f"ValueError: {e} when converting latitude/longitude")
 
-            # Display charts
-            display_charts(data)
+                # Display charts
+                display_charts(airport_data)
+            else:
+                st.error("Airport data is not in the expected format.")
 
 # Weather data
 elif api_option == "Weather":
