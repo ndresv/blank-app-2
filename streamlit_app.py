@@ -1,7 +1,6 @@
 import streamlit as st
 import requests
 import pandas as pd
-import matplotlib.pyplot as plt
 
 # API endpoints
 API_ENDPOINTS = {
@@ -80,13 +79,9 @@ def display_airport_data(airport, show_map):
 def display_charts_data(charts_data):
     st.header("Charts Data")
     if charts_data:
-        # Debugging: Print the available group keys
-        st.write(f"Available Groups: {list(charts_data.keys())}")
-        
-        for group in charts_data.keys():
-            description = CHART_GROUPS.get(group, 'Unknown Group')
-            st.subheader(f"Group: {description}")
-            charts_df = pd.DataFrame(charts_data[group])
+        for group, data in charts_data.items():
+            st.subheader(f"Group: {CHART_GROUPS.get(group, 'Unknown Group')}")
+            charts_df = pd.DataFrame(data)
             st.dataframe(charts_df)
     else:
         st.warning("No charts data available.")
@@ -155,7 +150,12 @@ elif api_option == 'VATSIM Pilots':
 elif api_option == 'Charts':
     icao_code = st.text_input("Enter ICAO code (e.g., KMIA)")
     group_description = st.selectbox("Select Chart Group", list(CHART_GROUPS.values()))
-    group = [key for key, value in CHART_GROUPS.items() if value == group_description][0]
-    if st.button("Fetch Charts Data"):
-        data = fetch_data('Charts', API_ENDPOINTS['Charts'].format(icao=icao_code, group=group))
-        display_charts_data(data)
+    group = [key for key, value in CHART_GROUPS.items() if value == group_description]
+    
+    if not group:
+        st.error("Invalid chart group selected.")
+    else:
+        group = group[0]
+        if st.button("Fetch Charts Data"):
+            data = fetch_data('Charts', API_ENDPOINTS['Charts'].format(icao=icao_code, group=group))
+            display_charts_data(data)
