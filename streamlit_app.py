@@ -94,12 +94,12 @@ st.title("Aviation Data Explorer")
 api_option = st.sidebar.radio("Select API", list(API_ENDPOINTS.keys()))
 
 if api_option == 'Airports':
-    icao_code = st.text_input("Enter ICAO code (e.g., KAVL)")
+    icao_code = st.text_input("Enter ICAO code (e.g., KMIA)")
     if st.button("Fetch Airport Data"):
         data = fetch_data(api_option, f"{API_ENDPOINTS['Airports']}{icao_code}")
         if data:
             st.write("Debugging Data Output: ", data)  # Debugging statement
-            airport = next((item for item in data if 'icao_ident' in item and item['icao_ident'] == icao_code), None)
+            airport = data.get(icao_code, [None])[0]  # Access the first airport in the list
             if airport:
                 display_airport_data(airport)
             else:
@@ -111,7 +111,7 @@ elif api_option == 'Preferred Routes':
         display_preferred_routes(data)
 
 elif api_option == 'Weather METAR':
-    icao_code = st.text_input("Enter ICAO code (e.g., KAVL)")
+    icao_code = st.text_input("Enter ICAO code (e.g., KMIA)")
     if st.button("Fetch Weather Data"):
         data = fetch_data(api_option, f"{API_ENDPOINTS['Weather METAR']}{icao_code}")
         display_weather_data(data)
