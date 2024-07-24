@@ -56,46 +56,49 @@ def display_airport_data(airport, show_map):
     st.write("Airport Data Table")
     st.dataframe(pd.DataFrame([airport]))
 
-    # Example charts (customize based on actual data)
-    chart_data = pd.DataFrame({
-        'Attribute': ['Elevation', 'Control Tower'],
-        'Value': [int(airport.get('elevation', 0)), 1 if airport.get('control_tower', 'N') == 'Y' else 0]
-    })
-
-    st.write("Charts")
-    st.line_chart(chart_data.set_index('Attribute')['Value'])
-    st.area_chart(chart_data.set_index('Attribute')['Value'])
-    st.bar_chart(chart_data.set_index('Attribute')['Value'])
-
 # Function to display charts data
 def display_charts_data(charts_data):
     st.header("Charts Data")
-    if charts_data:
-        if 'General' in charts_data:
-            st.subheader("General Charts")
-            charts_df = pd.DataFrame(charts_data['General'])
-            st.write("General Table")
-            st.dataframe(charts_df)
-
-            # Example charts
-            if not charts_df.empty:
-                st.line_chart(charts_df.set_index('state')['state'])
-                st.area_chart(charts_df.set_index('state')['state'])
-                st.bar_chart(charts_df.set_index('state')['state'])
-
-        if 'DP' in charts_data:
-            st.subheader("DP Charts")
-            charts_df = pd.DataFrame(charts_data['DP'])
-            st.write("DP Table")
-            st.dataframe(charts_df)
-
-            # Example charts
-            if not charts_df.empty:
-                st.line_chart(charts_df.set_index('state')['state'])
-                st.area_chart(charts_df.set_index('state')['state'])
-                st.bar_chart(charts_df.set_index('state')['state'])
-    else:
+    if not charts_data:
         st.warning("No charts data available.")
+        return
+
+    # Process and display charts based on the grouping
+    for group in charts_data.keys():
+        if group == "General":
+            st.subheader("General Charts")
+            general_data = charts_data["General"]
+            general_df = pd.DataFrame(general_data)
+            st.write("General Charts Table")
+            st.dataframe(general_df)
+
+            # Example charts (customize based on your actual data)
+            st.line_chart(general_df[['state', 'city', 'facility_name']].set_index('state'))
+            st.area_chart(general_df[['state', 'city', 'facility_name']].set_index('state'))
+            st.bar_chart(general_df[['state', 'city', 'facility_name']].set_index('state'))
+
+        elif group == "DP":
+            st.subheader("DP Charts")
+            dp_data = charts_data["DP"]
+            dp_df = pd.DataFrame(dp_data)
+            st.write("DP Charts Table")
+            st.dataframe(dp_df)
+
+            # Example charts (customize based on your actual data)
+            st.line_chart(dp_df[['state', 'city', 'facility_name']].set_index('state'))
+            st.area_chart(dp_df[['state', 'city', 'facility_name']].set_index('state'))
+            st.bar_chart(dp_df[['state', 'city', 'facility_name']].set_index('state'))
+
+        else:
+            st.subheader(f"Group: {group}")
+            group_df = pd.DataFrame(charts_data[group])
+            st.write(f"{group} Table")
+            st.dataframe(group_df)
+
+            # Example charts (customize based on your actual data)
+            st.line_chart(group_df[['state', 'city', 'facility_name']].set_index('state'))
+            st.area_chart(group_df[['state', 'city', 'facility_name']].set_index('state'))
+            st.bar_chart(group_df[['state', 'city', 'facility_name']].set_index('state'))
 
 # Function to display preferred routes data
 def display_preferred_routes(routes):
