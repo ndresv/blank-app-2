@@ -9,7 +9,7 @@ API_ENDPOINTS = {
     'Preferred Routes': 'https://api.aviationapi.com/v1/preferred-routes',
     'Weather METAR': 'https://api.aviationapi.com/v1/weather/metar?apt=',
     'VATSIM Pilots': 'https://api.aviationapi.com/v1/vatsim/pilots',
-    'Charts': 'https://api.aviationapi.com/v1/charts'
+    'Charts': 'https://api.aviationapi.com/v1/charts?apt={apt}&group={group}'
 }
 
 # Function to fetch data from the API
@@ -67,29 +67,6 @@ def display_airport_data(airport, show_map):
     st.area_chart(chart_data.set_index('Attribute')['Value'])
     st.bar_chart(chart_data.set_index('Attribute')['Value'])
 
-# Function to display charts data
-def display_charts_data(charts):
-    if charts:
-        # Create separate tables for each grouping
-        groupings = {
-            1: "General",
-            2: "Airport Diagram",
-            3: "General only",
-            4: "Departures only",
-            5: "Arrivals only",
-            6: "Approaches only",
-            7: "Everything but General"
-        }
-
-        for group_id, group_name in groupings.items():
-            st.header(f"{group_name} Table")
-            filtered_data = [chart for chart in charts if chart.get('group') == group_id]
-            if filtered_data:
-                df = pd.DataFrame(filtered_data)
-                st.write(df)
-            else:
-                st.warning(f"No data available for {group_name}.")
-
 # Function to display preferred routes data
 def display_preferred_routes(routes):
     st.header("Preferred Routes")
@@ -118,6 +95,21 @@ def display_vatsim_pilots(pilots):
     else:
         st.warning("No VATSIM pilots data available.")
 
+# Function to display charts data
+def display_charts_data(charts_data):
+    st.header("Charts Data")
+    if charts_data:
+        for group in sorted(charts_data.keys()):
+            st.subheader(f"Group {group}")
+            group_data = pd.DataFrame(charts_data[group])
+            if not group_data.empty:
+                st.write(f"Table for Group {group}")
+                st.dataframe(group_data)
+            else:
+                st.warning(f"No data available for Group {group}.")
+    else:
+        st.warning("No charts data available.")
+
 # Main app logic
 st.title("Aviation Data Explorer")
 
@@ -129,7 +121,6 @@ if api_option == 'Airports':
     if st.button("Fetch Airport Data"):
         data = fetch_data(api_option, f"{API_ENDPOINTS['Airports']}{icao_code}")
         if data:
-            st.write("Debugging Data Output: ", data)  # Debugging statement
             airport = data.get(icao_code, [None])[0]  # Access the first airport in the list
             if airport:
                 display_airport_data(airport, show_map)
@@ -154,19 +145,19 @@ elif api_option == 'VATSIM Pilots':
 
 elif api_option == 'Charts':
     icao_code = st.text_input("Enter ICAO code (e.g., KMIA)")
-    group = st.selectbox("Select Chart Grouping", [
-        '1: General, Departures, Arrivals, Approaches',
-        '2: Airport Diagram only',
-        '3: General only',
-        '4: Departures only',
-        '5: Arrivals only',
-        '6: Approaches only',
-        '7: Everything but General'
+    group = st.selectbox("Select Chart Group", options=[
+        "1 -> General, Departures, Arrivals, Approaches",
+        "2 -> Airport Diagram only",
+        "3 -> General only",
+        "4 -> Departures only",
+        "5 -> Arrivals only",
+        "6 -> Approaches only",
+        "7 -> Everything but General"
     ])
-    group_id = int(group.split(':')[0])
+    group_number = group.split(' ')[0]
     if st.button("Fetch Charts Data"):
-        params = {'apt': icao_code, 'group': group_id}
-        data = fetch_data('Charts', API_ENDPOINTS['Charts'], params=params)
+        params = {'apt': icao_code, 'group': group_number}
+        data = fetch_data('Charts', API_ENDPOINTS['Charts'].format(**params), params=params)
         display_charts_data(data)
 
 st.sidebar.header("Additional Features")
