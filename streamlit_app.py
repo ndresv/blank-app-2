@@ -77,10 +77,6 @@ def display_charts_data(charts_data):
             st.write(f"{group} Table")
             st.dataframe(charts_df)
 
-            # Example chart (customize based on your actual data)
-            st.line_chart(charts_df[['state', 'city', 'facility_name']].set_index('state'))
-            st.area_chart(charts_df[['state', 'city', 'facility_name']].set_index('state'))
-            st.bar_chart(charts_df[['state', 'city', 'facility_name']].set_index('state'))
     else:
         st.warning("No charts data available.")
 
