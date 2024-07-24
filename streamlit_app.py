@@ -100,12 +100,11 @@ if api_option == 'Airports':
     icao_code = st.text_input("Enter ICAO code (e.g., KAVL)")
     if st.button("Fetch Airport Data"):
         data = fetch_data(api_option, API_ENDPOINTS['Airports'], {'apt': icao_code})
-        if data['icao_ident'] == icao_code:
-            airport = data
-            if airport:
-                display_airport_data(airport)
-            else:
-                st.warning("Airport not found.")
+        airport = data
+        if airport:
+            display_airport_data(airport)
+        else:
+            st.warning("Airport not found.")
                 
 elif api_option == 'Preferred Routes':
     st.button("Fetch Preferred Routes Data")
