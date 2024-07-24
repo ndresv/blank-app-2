@@ -150,4 +150,4 @@ elif api_option == 'Charts':
                 charts_df = pd.DataFrame(data[group])
                 st.dataframe(charts_df)
              else:
-            st.warning("No charts data available.")
+                st.warning("No charts data available.")
