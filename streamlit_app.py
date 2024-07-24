@@ -44,11 +44,12 @@ def display_airport_data(airport):
     st.write(f"Control Tower: {airport.get('control_tower', 'N/A')}")
     st.write(f"UNICOM Frequency: {airport.get('unicom', 'N/A')}")
 
-    # Convert latitude and longitude to decimal degrees
-    lat_dd = dms_to_dd(airport.get('latitude', '0-0-0.0N'))
-    lon_dd = dms_to_dd(airport.get('longitude', '0-0-0.0E'))
+     if show_map:
+        # Convert latitude and longitude to decimal degrees
+        lat_dd = dms_to_dd(airport.get('latitude', '0-0-0.0N'))
+        lon_dd = dms_to_dd(airport.get('longitude', '0-0-0.0E'))
 
-    st.map(pd.DataFrame({'lat': [lat_dd], 'lon': [lon_dd]}))
+        st.map(pd.DataFrame({'lat': [lat_dd], 'lon': [lon_dd]}))
 
     # Interactive table
     st.write("Airport Data Table")
@@ -100,6 +101,7 @@ api_option = st.sidebar.radio("Select API", list(API_ENDPOINTS.keys()))
 
 if api_option == 'Airports':
     icao_code = st.text_input("Enter ICAO code (e.g., KMIA)")
+    show_map = st.checkbox("Enable Map View", value=True)
     if st.button("Fetch Airport Data"):
         data = fetch_data(api_option, f"{API_ENDPOINTS['Airports']}{icao_code}")
         if data:
