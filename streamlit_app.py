@@ -33,14 +33,14 @@ def dms_to_dd(dms):
     return dd
 
 # Function to display airport data
-def display_airport_data(airport):
-    st.header(f"Airport: {airport['facility_name']} ({airport['faa_ident']})")
-    st.subheader(f"ICAO Code: {airport['icao_ident']}")
-    st.write(f"City: {airport['city']}")
-    st.write(f"State: {airport['state_full']}")
-    st.write(f"Elevation: {airport['elevation']} feet")
-    st.write(f"Control Tower: {airport['control_tower']}")
-    st.write(f"UNICOM Frequency: {airport['unicom']}")
+def display_airport_data(data):
+    st.header(f"Airport: {data['facility_name']} ({data['faa_ident']})")
+    st.subheader(f"ICAO Code: {data['icao_ident']}")
+    st.write(f"City: {data['city']}")
+    st.write(f"State: {data['state_full']}")
+    st.write(f"Elevation: {data['elevation']} feet")
+    st.write(f"Control Tower: {data['control_tower']}")
+    st.write(f"UNICOM Frequency: {data['unicom']}")
     
     # Convert latitude and longitude to decimal degrees
     lat_dd = dms_to_dd(airport['latitude'])
@@ -101,9 +101,8 @@ if api_option == 'Airports':
     if st.button("Fetch Airport Data"):
         data = fetch_data(api_option, API_ENDPOINTS['Airports'], {'apt': icao_code})
         st.write(data)
-        airport = data
-        if airport:
-            display_airport_data(airport)
+        if data:
+            display_airport_data(data)
         else:
             st.warning("Airport not found.")
                 
