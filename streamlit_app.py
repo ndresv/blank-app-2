@@ -102,8 +102,6 @@ if api_option == 'Airports':
         data = fetch_data(api_option, API_ENDPOINTS['Airports'], {'apt': icao_code})
         if data['icao_ident'] == icao_code:
             airport = data
-            else:
-                airport = None
             if airport:
                 display_airport_data(airport)
             else:
