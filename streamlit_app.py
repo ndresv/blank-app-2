@@ -16,6 +16,13 @@ def fetch_data(endpoint, params=None):
         st.error(f"Error {response.status_code}: {response.json().get('message', 'Unknown error')}")
         return None
 
+# Function to convert latitude and longitude to decimal
+def convert_to_decimal(degree, minute, direction):
+    decimal = float(degree) + float(minute) / 60
+    if direction in ['S', 'W']:
+        decimal = -decimal
+    return decimal
+
 # Streamlit app
 def main():
     st.title("Aviation Data Viewer")
@@ -42,42 +49,47 @@ def main():
         if st.button("Fetch Charts"):
             data = fetch_data("charts", {"apt": icao})
             if data:
-                # Example of an interactive table
+                # Debugging: Inspect the data
+                st.write("Charts data:", data)
+                
                 df = pd.DataFrame(data)
                 st.dataframe(df)
-                st.success("Charts data fetched successfully!")
 
-                # Example Line Chart
-                if 'charts' in data:
-                    df_charts = pd.DataFrame(data['charts'])
-                    st.line_chart(df_charts[['altitude', 'heading']])  # Adjust columns as needed
-                
-                # Example Area Chart
+                # Line Chart
+                if not df.empty:
+                    st.line_chart(df[['altitude', 'heading']])  # Adjust columns as needed
+
+                # Area Chart
                 if 'weather' in data:
                     df_weather = pd.DataFrame(data['weather'])
                     st.area_chart(df_weather[['temperature', 'wind_speed']])  # Adjust columns as needed
-    
+
     elif option == "Airports":
         st.header("Airports")
         icao = st.text_input("Enter ICAO Code (e.g., KMIA)")
         if st.button("Fetch Airport Data"):
             data = fetch_data("airports", {"apt": icao})
             if data:
-                df = pd.DataFrame([data])
-                st.dataframe(df)  # Interactive table
-                st.success("Airport data fetched successfully!")
+                # Debugging: Inspect the data
+                st.write("Airport data:", data)
 
-                # Example Map
+                # Convert latitude and longitude to decimal format
+                lat_deg, lat_min = data['latitude'].split('-')[:2]
+                lon_deg, lon_min = data['longitude'].split('-')[:2]
+                latitude = convert_to_decimal(lat_deg, lat_min, data['latitude'][-1])
+                longitude = convert_to_decimal(lon_deg, lon_min, data['longitude'][-1])
+
                 airport_location = {
-                    'lat': [data['latitude_sec']],
-                    'lon': [data['longitude_sec']],
-                    'label': [data['name']]
+                    'lat': [latitude],
+                    'lon': [longitude],
+                    'label': [data['facility_name']]
                 }
                 df_location = pd.DataFrame(airport_location)
+                
                 st.pydeck_chart(pdk.Deck(
                     initial_view_state=pdk.ViewState(
-                        latitude=data['latitude_sec'],
-                        longitude=data['longitude_sec'],
+                        latitude=latitude,
+                        longitude=longitude,
                         zoom=11,
                         pitch=50
                     ),
@@ -91,6 +103,9 @@ def main():
                         )
                     ]
                 ))
+                
+                df = pd.DataFrame([data])
+                st.dataframe(df)
 
     elif option == "Preferred Routes":
         st.header("Preferred Routes")
@@ -99,11 +114,13 @@ def main():
         if st.button("Fetch Preferred Routes"):
             data = fetch_data("preferred-routes", {"dep": departure, "arr": arrival})
             if data:
-                df = pd.DataFrame(data)
-                st.dataframe(df)  # Interactive table
-                st.info("Preferred routes data fetched successfully!")
+                # Debugging: Inspect the data
+                st.write("Preferred routes data:", data)
 
-                # Example Bar Chart
+                df = pd.DataFrame(data)
+                st.dataframe(df)
+
+                # Bar Chart
                 if not df.empty:
                     st.bar_chart(df.set_index('route_id')['distance'])
 
@@ -113,8 +130,12 @@ def main():
         if st.button("Fetch METAR"):
             data = fetch_data("weather/metar", {"apt": icao})
             if data:
+                # Debugging: Inspect the data
+                st.write("METAR data:", data)
+
                 st.json(data)
-                # Example Line Chart for METAR data
+
+                # Line Chart for METAR data
                 if 'temperature' in data:
                     df_temp = pd.DataFrame(data['temperature'])
                     st.line_chart(df_temp[['temperature']])
@@ -125,8 +146,12 @@ def main():
         if st.button("Fetch TAF"):
             data = fetch_data("weather/taf", {"apt": icao})
             if data:
+                # Debugging: Inspect the data
+                st.write("TAF data:", data)
+
                 st.json(data)
-                # Example Area Chart for TAF data
+
+                # Area Chart for TAF data
                 if 'wind_speed' in data:
                     df_taf = pd.DataFrame(data['wind_speed'])
                     st.area_chart(df_taf[['wind_speed']])
@@ -144,12 +169,14 @@ def main():
             }
             data = fetch_data("vatsim/pilots", params)
             if data:
-                df = pd.DataFrame(data)
-                st.dataframe(df)  # Interactive table
-                st.warning("VATSIM pilots data fetched successfully!")
+                # Debugging: Inspect the data
+                st.write("VATSIM pilots data:", data)
 
-                # Example Map for VATSIM Pilots
-                if not df.empty:
+                df = pd.DataFrame(data)
+                st.dataframe(df)
+
+                # Map for VATSIM Pilots
+                if 'lat' in df.columns and 'lon' in df.columns:
                     st.pydeck_chart(pdk.Deck(
                         initial_view_state=pdk.ViewState(
                             latitude=df['lat'].mean(),
@@ -167,6 +194,8 @@ def main():
                             )
                         ]
                     ))
+                else:
+                    st.error("Latitude or longitude columns not found in VATSIM pilots data.")
 
     elif option == "VATSIM Controllers":
         st.header("VATSIM Controllers")
@@ -174,8 +203,11 @@ def main():
         if st.button("Fetch VATSIM Controllers"):
             data = fetch_data("vatsim/controllers", {"fac": facility})
             if data:
+                # Debugging: Inspect the data
+                st.write("VATSIM controllers data:", data)
+
                 df = pd.DataFrame(data)
-                st.dataframe(df)  # Interactive table
+                st.dataframe(df)
                 st.success("VATSIM controllers data fetched successfully!")
 
 if __name__ == "__main__":
