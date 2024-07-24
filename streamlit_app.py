@@ -15,7 +15,7 @@ def convert_coordinates(degree, minutes, seconds, direction):
 # Function to get airport data
 def fetch_airport_data(icao_code):
     api_key = 'your_api_key'
-    response = requests.get(f'https://api.aviationapi.com/v1/airports/{icao_code}', headers={'Authorization': f'Bearer {api_key}'})
+    response = requests.get(f'https://api.aviationapi.com/v1/airports?apt={icao_code}', headers={'Authorization': f'Bearer {api_key}'})
     if response.status_code == 200:
         return response.json()
     else:
