@@ -98,21 +98,20 @@ def display_vatsim_pilots(pilots):
 # Function to display charts data in tables
 def display_charts_data(charts):
     st.header("Charts Data")
-    # Group data by 'group' field and display in separate tables
-    grouped = pd.DataFrame(charts).groupby('group')
-    
-    for group_id, group_data in grouped:
-        st.subheader(f"Group {group_id} Data")
-        st.dataframe(group_data)
-        
+
+    # Display the charts data by grouping
+    for group_name, group_data in charts.items():
+        st.subheader(f"Group: {group_name}")
+        group_df = pd.DataFrame(group_data)
+        st.dataframe(group_df)
+
         # Optionally: Display charts for each group
-        if not group_data.empty:
-            st.write(f"Charts for Group {group_id}")
-            for column in group_data.columns:
-                if group_data[column].dtype in ['int64', 'float64']:
-                    st.line_chart(group_data[column])
-                    st.area_chart(group_data[column])
-                    st.bar_chart(group_data[column])
+        if not group_df.empty:
+            st.write(f"Charts for Group: {group_name}")
+            if 'value' in group_df.columns:
+                st.line_chart(group_df.set_index('value'))
+                st.area_chart(group_df.set_index('value'))
+                st.bar_chart(group_df.set_index('value'))
 
 # Main app logic
 st.title("Aviation Data Explorer")
