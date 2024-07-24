@@ -85,11 +85,6 @@ def display_charts_data(charts_data):
             charts_df = pd.DataFrame(charts_data[group])
             st.write(f"{CHART_GROUPS.get(group, 'Unknown Group')} Table")
             st.dataframe(charts_df)
-
-            # Example chart (customize based on your actual data)
-            st.line_chart(charts_df[['state', 'city', 'facility_name']].set_index('state'))
-            st.area_chart(charts_df[['state', 'city', 'facility_name']].set_index('state'))
-            st.bar_chart(charts_df[['state', 'city', 'facility_name']].set_index('state'))
     else:
         st.warning("No charts data available.")
 
@@ -162,7 +157,3 @@ elif api_option == 'Charts':
         data = fetch_data('Charts', API_ENDPOINTS['Charts'].format(icao=icao_code, group=group))
         display_charts_data(data)
 
-st.sidebar.header("Additional Features")
-show_expanded = st.sidebar.checkbox("Show Expanded")
-if show_expanded:
-    st.sidebar.info("Expanded features are shown.")
