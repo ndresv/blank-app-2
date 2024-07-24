@@ -33,7 +33,7 @@ def main():
         if option in ["Airports", "Weather METAR", "Weather TAF"]:
             airport_code = st.sidebar.text_input("Enter Airport ICAO or FAA Code", "")
             if airport_code:
-                params = {"icao": airport_code} if option != "Preferred Routes" else {"search": airport_code}
+                params = {"id": airport_code} if option != "Preferred Routes" else {"search": airport_code}
             else:
                 params = {}
         else:
