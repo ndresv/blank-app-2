@@ -144,10 +144,9 @@ elif api_option == 'Charts':
     if st.button("Fetch Charts Data"):
         data = fetch_data('Charts', API_ENDPOINTS['Charts'].format(icao=icao_code, group=group))
         st.header("Charts Data")
-        if data:
-            for group in data.keys():
-                st.subheader(f"Group: {CHART_GROUPS.get(group, 'Unknown Group')}")
-                charts_df = pd.DataFrame(data[group])
-                st.dataframe(charts_df)
-            else:
-                st.warning("No charts data available.")
+        for group in data.keys():
+            st.subheader(f"Group: {CHART_GROUPS.get(group, 'Unknown Group')}")
+            charts_df = pd.DataFrame(data[group])
+            st.dataframe(charts_df)
+        else:
+            st.warning("No charts data available.")
