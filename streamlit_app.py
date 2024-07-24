@@ -1,7 +1,6 @@
 import streamlit as st
 import requests
 import pandas as pd
-import matplotlib.pyplot as plt
 import pydeck as pdk
 
 # Define API endpoints
@@ -17,11 +16,13 @@ def fetch_data(endpoint, params=None):
         return None
 
 # Function to convert latitude and longitude to decimal
-def convert_to_decimal(degree, minute, direction):
-    decimal = float(degree) + float(minute) / 60
-    if direction in ['S', 'W']:
-        decimal = -decimal
-    return decimal
+def convert_to_decimal(coord):
+    degrees = float(coord[:2])
+    minutes = float(coord[3:5]) + float(coord[6:10]) / 60
+    if coord[-1] in ['S', 'W']:
+        return -(degrees + minutes / 60)
+    else:
+        return degrees + minutes / 60
 
 # Streamlit app
 def main():
@@ -49,18 +50,17 @@ def main():
         if st.button("Fetch Charts"):
             data = fetch_data("charts", {"apt": icao})
             if data:
-                # Debugging: Inspect the data
                 st.write("Charts data:", data)
                 
                 df = pd.DataFrame(data)
                 st.dataframe(df)
 
                 # Line Chart
-                if not df.empty and 'altitude' in df.columns and 'heading' in df.columns:
+                if not df.empty:
                     st.line_chart(df[['altitude', 'heading']])  # Adjust columns as needed
 
                 # Area Chart
-                if 'weather' in data and 'temperature' in data['weather']:
+                if 'weather' in data:
                     df_weather = pd.DataFrame(data['weather'])
                     st.area_chart(df_weather[['temperature', 'wind_speed']])  # Adjust columns as needed
 
@@ -70,47 +70,39 @@ def main():
         if st.button("Fetch Airport Data"):
             data = fetch_data("airports", {"apt": icao})
             if data:
-                # Debugging: Inspect the data
                 st.write("Airport data:", data)
 
-                try:
-                    # Convert latitude and longitude to decimal format
-                    lat_deg, lat_min = data['latitude'].split('-')[:2]
-                    lon_deg, lon_min = data['longitude'].split('-')[:2]
-                    latitude = convert_to_decimal(lat_deg, lat_min, data['latitude'][-1])
-                    longitude = convert_to_decimal(lon_deg, lon_min, data['longitude'][-1])
+                # Convert latitude and longitude to decimal format
+                latitude = convert_to_decimal(data['latitude'])
+                longitude = convert_to_decimal(data['longitude'])
 
-                    airport_location = {
-                        'lat': [latitude],
-                        'lon': [longitude],
-                        'label': [data['facility_name']]
-                    }
-                    df_location = pd.DataFrame(airport_location)
-                    
-                    st.pydeck_chart(pdk.Deck(
-                        initial_view_state=pdk.ViewState(
-                            latitude=latitude,
-                            longitude=longitude,
-                            zoom=11,
-                            pitch=50
-                        ),
-                        layers=[
-                            pdk.Layer(
-                                'ScatterplotLayer',
-                                data=df_location,
-                                get_position=['lon', 'lat'],
-                                get_color=[255, 0, 0],
-                                get_radius=1000
-                            )
-                        ]
-                    ))
-                    
-                    df = pd.DataFrame([data])
-                    st.dataframe(df)
-                except KeyError as e:
-                    st.error(f"Key error: {e}")
-                except Exception as e:
-                    st.error(f"An error occurred: {e}")
+                airport_location = {
+                    'lat': [latitude],
+                    'lon': [longitude],
+                    'label': [data['facility_name']]
+                }
+                df_location = pd.DataFrame(airport_location)
+                
+                st.pydeck_chart(pdk.Deck(
+                    initial_view_state=pdk.ViewState(
+                        latitude=latitude,
+                        longitude=longitude,
+                        zoom=11,
+                        pitch=50
+                    ),
+                    layers=[
+                        pdk.Layer(
+                            'ScatterplotLayer',
+                            data=df_location,
+                            get_position=['lon', 'lat'],
+                            get_color=[255, 0, 0],
+                            get_radius=1000
+                        )
+                    ]
+                ))
+                
+                df = pd.DataFrame([data])
+                st.dataframe(df)
 
     elif option == "Preferred Routes":
         st.header("Preferred Routes")
@@ -119,14 +111,13 @@ def main():
         if st.button("Fetch Preferred Routes"):
             data = fetch_data("preferred-routes", {"dep": departure, "arr": arrival})
             if data:
-                # Debugging: Inspect the data
                 st.write("Preferred routes data:", data)
 
                 df = pd.DataFrame(data)
                 st.dataframe(df)
 
                 # Bar Chart
-                if not df.empty and 'route_id' in df.columns and 'distance' in df.columns:
+                if not df.empty:
                     st.bar_chart(df.set_index('route_id')['distance'])
 
     elif option == "Weather METAR":
@@ -135,7 +126,6 @@ def main():
         if st.button("Fetch METAR"):
             data = fetch_data("weather/metar", {"apt": icao})
             if data:
-                # Debugging: Inspect the data
                 st.write("METAR data:", data)
 
                 st.json(data)
@@ -151,7 +141,6 @@ def main():
         if st.button("Fetch TAF"):
             data = fetch_data("weather/taf", {"apt": icao})
             if data:
-                # Debugging: Inspect the data
                 st.write("TAF data:", data)
 
                 st.json(data)
@@ -174,7 +163,6 @@ def main():
             }
             data = fetch_data("vatsim/pilots", params)
             if data:
-                # Debugging: Inspect the data
                 st.write("VATSIM pilots data:", data)
 
                 df = pd.DataFrame(data)
@@ -208,7 +196,6 @@ def main():
         if st.button("Fetch VATSIM Controllers"):
             data = fetch_data("vatsim/controllers", {"fac": facility})
             if data:
-                # Debugging: Inspect the data
                 st.write("VATSIM controllers data:", data)
 
                 df = pd.DataFrame(data)
