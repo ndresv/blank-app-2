@@ -1,114 +1,82 @@
 import streamlit as st
-import pandas as pd
 import requests
+import pandas as pd
 import matplotlib.pyplot as plt
+import pydeck as pdk
 
-# Set up the page layout
-st.set_page_config(page_title="Football Stats", layout="wide")
-
-# Sidebar configuration
-st.sidebar.title("Football Stats Web App")
-st.sidebar.markdown("Select options to filter data")
-
-# API Request to fetch football data
-api_key = "EuO4CTVqJ9exA0Oe04kE6BYAlCMmESs468pYDGbg1m7sl80fvwrncVSubpQB"
-base_url = "https://api.sportmonks.com/v3/football/"
-
-def get_data(endpoint, params=None):
-    url = f"{base_url}{endpoint}"
-    params = params or {}
-    params["api_token"] = api_key
-    try:
-        response = requests.get(url, params=params)
-        response.raise_for_status()
+# Function to fetch data from the API
+def fetch_data(api_url):
+    response = requests.get(api_url)
+    if response.status_code == 200:
         return response.json()
-    except requests.exceptions.RequestException as e:
-        st.error(f"Request failed: {e}")
+    else:
+        st.error(f"Error fetching data: {response.status_code}")
         return None
 
-# Fetch data with nested includes for fixtures
-fixtures_endpoint = "fixtures"
-fixtures_params = {"include": "league;season;venue"}
-fixtures = get_data(fixtures_endpoint, params=fixtures_params)
+# API URL (replace with actual endpoint and key if needed)
+API_URL = "https://aviationapi.com/v1/"
 
-# Fetch leagues data
-leagues = get_data("leagues")
+# Streamlit layout
+st.title("FAA Aeronautical Charts and Publications")
 
-# Check if data fetching was successful
-if fixtures and leagues:
-    # Convert data to DataFrame
-    fixtures_df = pd.json_normalize(fixtures['data']) if 'data' in fixtures else pd.DataFrame()
-    leagues_df = pd.json_normalize(leagues['data']) if 'data' in leagues else pd.DataFrame()
+# Sidebar
+st.sidebar.header("Filter Options")
 
-    st.write("Fixtures DataFrame Structure:")
-    st.write(fixtures_df.head())
+# Interactive widgets
+selected_option = st.sidebar.selectbox("Select Data", ["Airport Information", "Weather Data"])
+date_input = st.sidebar.date_input("Select Date", pd.to_datetime("today"))
 
-    st.write("Leagues DataFrame Structure:")
-    st.write(leagues_df.head())
+if selected_option == "Airport Information":
+    # Fetch and display data for Airport Information
+    airport_data = fetch_data(f"{API_URL}/airports")
+    if airport_data:
+        st.subheader("Airport Information")
+        df = pd.DataFrame(airport_data)
+        st.dataframe(df)
+        
+        # Display a bar chart for airport data
+        st.subheader("Airport Data Bar Chart")
+        st.bar_chart(df[['some_column']].set_index('some_index_column'))
 
-    # Display League Information
-    st.header("Leagues Information")
-    for _, league in leagues_df.iterrows():
-        st.subheader(league['name'])
-        st.image(league['image_path'], use_column_width=True)
-        st.write(f"Short Code: {league['short_code']}")
-        st.write(f"Country ID: {league['country_id']}")
-        st.write(f"Last Played At: {league['last_played_at']}")
-        st.write("------")
+elif selected_option == "Weather Data":
+    # Fetch and display data for Weather Information
+    weather_data = fetch_data(f"{API_URL}/weather")
+    if weather_data:
+        st.subheader("Weather Information")
+        df = pd.DataFrame(weather_data)
+        st.dataframe(df)
+        
+        # Display line and area charts for weather data
+        st.subheader("Weather Data Charts")
+        
+        st.line_chart(df[['temperature', 'humidity']])
+        st.area_chart(df[['precipitation']])
+        
+        # Display a map with weather data points
+        st.subheader("Weather Data Map")
+        st.pydeck_chart(pdk.Deck(
+            initial_view_state=pdk.ViewState(latitude=37.7749, longitude=-122.4194, zoom=10),
+            layers=[
+                pdk.Layer(
+                    "ScatterplotLayer",
+                    data=df,
+                    get_position=["longitude", "latitude"],
+                    get_color=[255, 0, 0],
+                    get_radius=1000
+                )
+            ]
+        ))
 
-    # Select box for teams
-    team_names = fixtures_df['name'].tolist()
-    selected_team = st.sidebar.selectbox("Select a Team", team_names)
+# Feedback and Messages
+st.success("Data successfully loaded!")
+st.info("Select an option from the sidebar to view data.")
+st.warning("Ensure that API keys and endpoints are correctly configured.")
+st.error("An error occurred while fetching data.")
 
-    # Filter fixtures by selected team
-    filtered_fixtures = fixtures_df[
-        (fixtures_df['name'].str.contains(selected_team, case=False))
-    ]
+# Optional: Add any other widgets if needed
+radio_option = st.radio("Choose an option", ["Option 1", "Option 2"])
+text_input = st.text_input("Enter some text")
 
-    # Display team fixtures
-    st.header(f"Fixtures for {selected_team}")
-    st.dataframe(filtered_fixtures[['starting_at', 'name', 'result_info']])
-
-    # Line chart for team performance (mock data since actual performance stats are missing)
-    st.header(f"{selected_team} Performance Over Time")
-    fig, ax = plt.subplots()
-    # Assuming 'starting_at' is the date and mock scores
-    filtered_fixtures['starting_at'] = pd.to_datetime(filtered_fixtures['starting_at'])
-    filtered_fixtures['mock_score'] = [1, 2, 3, 4]  # Mock data
-    ax.plot(filtered_fixtures['starting_at'], filtered_fixtures['mock_score'], label="Team Performance")
-    ax.set_xlabel("Date")
-    ax.set_ylabel("Performance")
-    ax.legend()
-    st.pyplot(fig)
-
-    # Bar chart for standings
-    st.header("League Standings")
-    st.bar_chart(fixtures_df[['starting_at', 'result_info']])
-
-    # Map of stadiums (mock data since actual lat/lon are missing)
-    st.header("Stadium Locations")
-    stadium_locations = fixtures_df[['name', 'venue.latitude', 'venue.longitude']].dropna()
-    stadium_locations.columns = ['name', 'lat', 'lon']
-    st.map(stadium_locations)
-
-    # Interactive Widgets
-    st.sidebar.header("User Interaction")
-    if st.sidebar.button("Refresh Data"):
-        st.experimental_rerun()
-
-    show_standings = st.sidebar.checkbox("Show Standings")
-    if show_standings:
-        st.success("Standings are displayed in the bar chart above")
-
-    # Additional Widgets
-    st.sidebar.text_input("Search for a player", key="search_player")
-    st.sidebar.slider("Filter by Age", 15, 40, (20, 30))
-    st.sidebar.color_picker("Pick a Theme Color")
-
-    # Conclusion
-    st.sidebar.info("Football Stats Web App provides an interactive platform to view football data and stats.")
-
-    # Final output
-    st.write("Developed by [Your Name]. Data provided by Sportmonks Football API.")
-else:
-    st.error("Failed to fetch required data. Please check the API endpoints and your API key.")
+# Display widgets
+st.write("Radio Option Selected:", radio_option)
+st.write("Text Input:", text_input)
