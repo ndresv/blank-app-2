@@ -26,10 +26,7 @@ def fetch_data(api_name, endpoint, params=None):
     try:
         response = requests.get(endpoint, params=params)
         response.raise_for_status()
-        data = response.json()
-        st.write(f"Data fetched from {api_name}:")
-        st.write(data)  # Debugging: print raw data
-        return data
+        return response.json()
     except requests.exceptions.RequestException as e:
         st.error(f"Error fetching data from {api_name}: {e}")
         return None
@@ -83,12 +80,9 @@ def display_airport_data(airport, show_map):
 def display_charts_data(charts_data):
     st.header("Charts Data")
     if charts_data:
-        st.write("Charts data received:")
-        st.write(charts_data)  # Debugging: print charts data
         for group in charts_data.keys():
             st.subheader(f"Group: {CHART_GROUPS.get(group, 'Unknown Group')}")
             charts_df = pd.DataFrame(charts_data[group])
-            st.write(f"Data for Group: {CHART_GROUPS.get(group, 'Unknown Group')}")
             st.dataframe(charts_df)
     else:
         st.warning("No charts data available.")
@@ -158,7 +152,6 @@ elif api_option == 'Charts':
     icao_code = st.text_input("Enter ICAO code (e.g., KMIA)")
     group_description = st.selectbox("Select Chart Group", list(CHART_GROUPS.values()))
     group = [key for key, value in CHART_GROUPS.items() if value == group_description][0]
-    st.write(f"Fetching data for ICAO code: {icao_code} and group: {group}")  # Debugging: print API parameters
     if st.button("Fetch Charts Data"):
         data = fetch_data('Charts', API_ENDPOINTS['Charts'].format(icao=icao_code, group=group))
         display_charts_data(data)
