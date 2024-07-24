@@ -16,13 +16,12 @@ def fetch_data(endpoint, params=None):
         return None
 
 # Function to convert latitude and longitude to decimal
-def convert_to_decimal(coord):
-    degrees = float(coord[:2])
-    minutes = float(coord[3:5]) + float(coord[6:10]) / 60
-    if coord[-1] in ['S', 'W']:
-        return -(degrees + minutes / 60)
-    else:
-        return degrees + minutes / 60
+def convert_to_decimal(degree_str, direction):
+    degrees, minutes = degree_str.split('-')
+    decimal = float(degrees) + float(minutes) / 60
+    if direction in ['S', 'W']:
+        decimal = -decimal
+    return decimal
 
 # Streamlit app
 def main():
@@ -73,8 +72,8 @@ def main():
                 st.write("Airport data:", data)
 
                 # Convert latitude and longitude to decimal format
-                latitude = convert_to_decimal(data['latitude'])
-                longitude = convert_to_decimal(data['longitude'])
+                latitude = convert_to_decimal(data['latitude'], data['latitude'][-1])
+                longitude = convert_to_decimal(data['longitude'], data['longitude'][-1])
 
                 airport_location = {
                     'lat': [latitude],
