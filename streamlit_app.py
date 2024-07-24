@@ -99,7 +99,7 @@ api_option = st.sidebar.radio("Select API", list(API_ENDPOINTS.keys()))
 if api_option == 'Airports':
     icao_code = st.text_input("Enter ICAO code (e.g., KAVL)")
     if st.button("Fetch Airport Data"):
-        data = fetch_data(api_option, API_ENDPOINTS['Airports'], {'icao': icao_code})
+        data = fetch_data(api_option, API_ENDPOINTS['Airports'], {'apt': icao_code})
         if data:
             airport = next((item for item in data if item['icao_ident'] == icao_code), None)
             if airport:
