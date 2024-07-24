@@ -76,17 +76,6 @@ def display_airport_data(airport, show_map):
     st.area_chart(chart_data.set_index('Attribute')['Value'])
     st.bar_chart(chart_data.set_index('Attribute')['Value'])
 
-# Function to display charts data
-def display_charts_data(charts_data):
-    st.header("Charts Data")
-    if charts_data:
-        for group in charts_data.keys():
-            st.subheader(f"Group: {CHART_GROUPS.get(group, 'Unknown Group')}")
-            charts_df = pd.DataFrame(charts_data[group])
-            st.dataframe(charts_df)
-    else:
-        st.warning("No charts data available.")
-
 # Function to display preferred routes data
 def display_preferred_routes(routes):
     st.header("Preferred Routes")
@@ -154,4 +143,11 @@ elif api_option == 'Charts':
     group = [key for key, value in CHART_GROUPS.items() if value == group_description][0]
     if st.button("Fetch Charts Data"):
         data = fetch_data('Charts', API_ENDPOINTS['Charts'].format(icao=icao_code, group=group))
-        display_charts_data(data)
+        st.header("Charts Data")
+        if data:
+            for group in data.keys():
+                st.subheader(f"Group: {CHART_GROUPS.get(group, 'Unknown Group')}")
+                charts_df = pd.DataFrame(data[group])
+                st.dataframe(charts_df)
+             else:
+            st.warning("No charts data available.")
