@@ -106,10 +106,10 @@ if api_option == 'Airports':
             # st.write("Debugging Data Output: ", data)  # Debugging statement
             airport = data.get(icao_code, [None])[0]  # Access the first airport in the list
             if airport:
-                st.success("Airport not found.")
+                st.success("Airport found!")
                 display_airport_data(airport)
             else:
-                st.warning("Airport not found.")
+                st.warning("Airport not found!")
                 
 elif api_option == 'Preferred Routes':
     if st.button("Fetch Preferred Routes Data"):
