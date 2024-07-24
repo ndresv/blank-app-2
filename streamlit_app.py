@@ -95,15 +95,24 @@ def display_vatsim_pilots(pilots):
     else:
         st.warning("No VATSIM pilots data available.")
 
-# Function to display charts data
+# Function to display charts data in tables
 def display_charts_data(charts):
     st.header("Charts Data")
-    if charts:
-        df = pd.DataFrame(charts)
-        st.write("Charts Data Table")
-        st.dataframe(df)
-    else:
-        st.warning("No charts data available.")
+    # Group data by 'group' field and display in separate tables
+    grouped = pd.DataFrame(charts).groupby('group')
+    
+    for group_id, group_data in grouped:
+        st.subheader(f"Group {group_id} Data")
+        st.dataframe(group_data)
+        
+        # Optionally: Display charts for each group
+        if not group_data.empty:
+            st.write(f"Charts for Group {group_id}")
+            for column in group_data.columns:
+                if group_data[column].dtype in ['int64', 'float64']:
+                    st.line_chart(group_data[column])
+                    st.area_chart(group_data[column])
+                    st.bar_chart(group_data[column])
 
 # Main app logic
 st.title("Aviation Data Explorer")
@@ -147,16 +156,7 @@ elif api_option == 'Charts':
         data = fetch_data(api_option, API_ENDPOINTS['Charts'], params=params)
         if data:
             st.write("Debugging Charts Data Output: ", data)  # Debugging statement
-            for group_id in range(1, 8):
-                if group == group_id:
-                    group_data = [chart for chart in data if chart.get('group') == group_id]
-                    st.write(f"Group {group_id} Data:")
-                    display_charts_data(group_data)
-                    # Create and display tables for each grouping
-                    for chart in group_data:
-                        chart_df = pd.DataFrame(chart)
-                        st.write(f"Chart Data for Group {group_id}")
-                        st.dataframe(chart_df)
+            display_charts_data(data)
 
 st.sidebar.header("Additional Features")
 show_expanded = st.sidebar.checkbox("Show Expanded")
