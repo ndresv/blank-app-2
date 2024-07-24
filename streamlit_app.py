@@ -1,20 +1,51 @@
 import streamlit as st
-import requests
 import pandas as pd
-import matplotlib.pyplot as plt
 import pydeck as pdk
+import matplotlib.pyplot as plt
 
-# Function to fetch data from the API
-def fetch_data(api_url):
-    response = requests.get(api_url)
-    if response.status_code == 200:
-        return response.json()
-    else:
-        st.error(f"Error fetching data: {response.status_code}")
-        return None
+# Sample data for charts and tables
+airport_data = {
+    "site_number": ["16517.5*A"],
+    "facility_name": ["ASHEVILLE RGNL"],
+    "faa_ident": ["AVL"],
+    "icao_ident": ["KAVL"],
+    "state": ["NC"],
+    "city": ["ASHEVILLE"],
+    "elevation": [2162],
+    "latitude": ["35-26-04.0000N"],
+    "longitude": ["082-32-33.8240W"]
+}
 
-# API URL (replace with actual endpoint and key if needed)
-API_URL = "https://aviationapi.com/v1/"
+weather_data = {
+    "station_id": ["KDVK"],
+    "temp": [3.0],
+    "dewpoint": [0.0],
+    "wind": ["190"],
+    "wind_vel": [8],
+    "visibility": [10.0],
+    "alt_hg": [29.89]
+}
+
+preferred_routes_data = {
+    "origin": ["ABQ"],
+    "route": ["ABQ DIESL TTORO3 IAH"],
+    "destination": ["IAH"],
+    "altitude": [350]
+}
+
+vatsim_data = {
+    "callsign": ["AAL1567"],
+    "latitude": [32.30375],
+    "longitude": [-94.69470],
+    "altitude": [35974],
+    "ground_speed": [403]
+}
+
+# Convert to DataFrame
+airport_df = pd.DataFrame(airport_data)
+weather_df = pd.DataFrame(weather_data)
+preferred_routes_df = pd.DataFrame(preferred_routes_data)
+vatsim_df = pd.DataFrame(vatsim_data)
 
 # Streamlit layout
 st.title("FAA Aeronautical Charts and Publications")
@@ -22,50 +53,66 @@ st.title("FAA Aeronautical Charts and Publications")
 # Sidebar
 st.sidebar.header("Filter Options")
 
-# Interactive widgets
-selected_option = st.sidebar.selectbox("Select Data", ["Airport Information", "Weather Data"])
-date_input = st.sidebar.date_input("Select Date", pd.to_datetime("today"))
+selected_option = st.sidebar.selectbox("Select Data", ["Airport Information", "Weather Data", "Preferred Routes", "VATSIM Data"])
 
 if selected_option == "Airport Information":
-    # Fetch and display data for Airport Information
-    airport_data = fetch_data(f"{API_URL}/airports")
-    if airport_data:
-        st.subheader("Airport Information")
-        df = pd.DataFrame(airport_data)
-        st.dataframe(df)
-        
-        # Display a bar chart for airport data
-        st.subheader("Airport Data Bar Chart")
-        st.bar_chart(df[['some_column']].set_index('some_index_column'))
+    st.subheader("Airport Information")
+    st.dataframe(airport_df)
+    
+    # Display a bar chart for airport elevation data
+    st.subheader("Airport Elevation Chart")
+    st.bar_chart(airport_df[['elevation']])
 
 elif selected_option == "Weather Data":
-    # Fetch and display data for Weather Information
-    weather_data = fetch_data(f"{API_URL}/weather")
-    if weather_data:
-        st.subheader("Weather Information")
-        df = pd.DataFrame(weather_data)
-        st.dataframe(df)
-        
-        # Display line and area charts for weather data
-        st.subheader("Weather Data Charts")
-        
-        st.line_chart(df[['temperature', 'humidity']])
-        st.area_chart(df[['precipitation']])
-        
-        # Display a map with weather data points
-        st.subheader("Weather Data Map")
-        st.pydeck_chart(pdk.Deck(
-            initial_view_state=pdk.ViewState(latitude=37.7749, longitude=-122.4194, zoom=10),
-            layers=[
-                pdk.Layer(
-                    "ScatterplotLayer",
-                    data=df,
-                    get_position=["longitude", "latitude"],
-                    get_color=[255, 0, 0],
-                    get_radius=1000
-                )
-            ]
-        ))
+    st.subheader("Weather Information")
+    st.dataframe(weather_df)
+    
+    # Display line and area charts for weather data
+    st.subheader("Weather Data Charts")
+    st.line_chart(weather_df[['temp', 'dewpoint']])
+    st.area_chart(weather_df[['visibility']])
+    
+    # Display a map with weather station
+    st.subheader("Weather Station Map")
+    st.pydeck_chart(pdk.Deck(
+        initial_view_state=pdk.ViewState(latitude=32.30375, longitude=-94.69470, zoom=10),
+        layers=[
+            pdk.Layer(
+                "ScatterplotLayer",
+                data=weather_df,
+                get_position=["longitude", "latitude"],
+                get_color=[255, 0, 0],
+                get_radius=1000
+            )
+        ]
+    ))
+
+elif selected_option == "Preferred Routes":
+    st.subheader("Preferred Routes Information")
+    st.dataframe(preferred_routes_df)
+    
+    # Display a bar chart for preferred route altitude data
+    st.subheader("Preferred Routes Altitude Chart")
+    st.bar_chart(preferred_routes_df[['altitude']])
+
+elif selected_option == "VATSIM Data":
+    st.subheader("VATSIM Data")
+    st.dataframe(vatsim_df)
+    
+    # Display a map with VATSIM flight data
+    st.subheader("VATSIM Flight Map")
+    st.pydeck_chart(pdk.Deck(
+        initial_view_state=pdk.ViewState(latitude=32.30375, longitude=-94.69470, zoom=5),
+        layers=[
+            pdk.Layer(
+                "ScatterplotLayer",
+                data=vatsim_df,
+                get_position=["longitude", "latitude"],
+                get_color=[0, 0, 255],
+                get_radius=1000
+            )
+        ]
+    ))
 
 # Feedback and Messages
 st.success("Data successfully loaded!")
@@ -73,7 +120,7 @@ st.info("Select an option from the sidebar to view data.")
 st.warning("Ensure that API keys and endpoints are correctly configured.")
 st.error("An error occurred while fetching data.")
 
-# Optional: Add any other widgets if needed
+# Additional Widgets
 radio_option = st.radio("Choose an option", ["Option 1", "Option 2"])
 text_input = st.text_input("Enter some text")
 
