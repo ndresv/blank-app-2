@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 API_ENDPOINTS = {
     'Airports': 'https://api.aviationapi.com/v1/airports?apt=',
     'Preferred Routes': 'https://api.aviationapi.com/v1/preferred-routes',
-    'VATSIM Pilots': 'https://api.aviationapi.com/v1/vatsim/pilots',
+    'VATSIM Pilots': 'https://api.aviationapi.com/v1/vatsim/pilots?apt=',
     'Charts': 'https://api.aviationapi.com/v1/charts?apt={icao}&group={group}'
 }
 
@@ -127,8 +127,9 @@ elif api_option == 'Preferred Routes':
         display_preferred_routes(data)
 
 elif api_option == 'VATSIM Pilots':
+    icao_code = st.text_input("Enter ICAO code (e.g., KMIA)")
     if st.button("Fetch VATSIM Pilots Data"):
-        data = fetch_data(api_option, API_ENDPOINTS['VATSIM Pilots'])
+        data = fetch_data(api_option, f"{API_ENDPOINTS['VATSIM Pilots']}{icao_code}")
         display_vatsim_pilots(data)
 
 elif api_option == 'Charts':
