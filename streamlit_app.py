@@ -9,7 +9,7 @@ API_ENDPOINTS = {
     'Preferred Routes': 'https://api.aviationapi.com/v1/preferred-routes',
     'Weather METAR': 'https://api.aviationapi.com/v1/weather/metar?apt=',
     'VATSIM Pilots': 'https://api.aviationapi.com/v1/vatsim/pilots',
-    'Charts': 'https://api.aviationapi.com/v1/charts?apt={apt}&group={group}'
+    'Charts': 'https://api.aviationapi.com/v1/charts'
 }
 
 # Function to fetch data from the API
@@ -96,17 +96,12 @@ def display_vatsim_pilots(pilots):
         st.warning("No VATSIM pilots data available.")
 
 # Function to display charts data
-def display_charts_data(charts_data):
+def display_charts_data(charts):
     st.header("Charts Data")
-    if charts_data:
-        for group in sorted(charts_data.keys()):
-            st.subheader(f"Group {group}")
-            group_data = pd.DataFrame(charts_data[group])
-            if not group_data.empty:
-                st.write(f"Table for Group {group}")
-                st.dataframe(group_data)
-            else:
-                st.warning(f"No data available for Group {group}.")
+    if charts:
+        df = pd.DataFrame(charts)
+        st.write("Charts Data Table")
+        st.dataframe(df)
     else:
         st.warning("No charts data available.")
 
@@ -121,6 +116,7 @@ if api_option == 'Airports':
     if st.button("Fetch Airport Data"):
         data = fetch_data(api_option, f"{API_ENDPOINTS['Airports']}{icao_code}")
         if data:
+            st.write("Debugging Data Output: ", data)  # Debugging statement
             airport = data.get(icao_code, [None])[0]  # Access the first airport in the list
             if airport:
                 display_airport_data(airport, show_map)
@@ -144,21 +140,23 @@ elif api_option == 'VATSIM Pilots':
         display_vatsim_pilots(data)
 
 elif api_option == 'Charts':
-    icao_code = st.text_input("Enter ICAO code (e.g., KMIA)")
-    group = st.selectbox("Select Chart Group", options=[
-        "1 -> General, Departures, Arrivals, Approaches",
-        "2 -> Airport Diagram only",
-        "3 -> General only",
-        "4 -> Departures only",
-        "5 -> Arrivals only",
-        "6 -> Approaches only",
-        "7 -> Everything but General"
-    ])
-    group_number = group.split(' ')[0]
+    apt_code = st.text_input("Enter ICAO code (e.g., KMIA)")
+    group = st.selectbox("Select Grouping", [1, 2, 3, 4, 5, 6, 7])
     if st.button("Fetch Charts Data"):
-        params = {'apt': icao_code, 'group': group_number}
-        data = fetch_data('Charts', API_ENDPOINTS['Charts'].format(**params), params=params)
-        display_charts_data(data)
+        params = {'apt': apt_code, 'group': group}
+        data = fetch_data(api_option, API_ENDPOINTS['Charts'], params=params)
+        if data:
+            st.write("Debugging Charts Data Output: ", data)  # Debugging statement
+            for group_id in range(1, 8):
+                if group == group_id:
+                    group_data = [chart for chart in data if chart.get('group') == group_id]
+                    st.write(f"Group {group_id} Data:")
+                    display_charts_data(group_data)
+                    # Create and display tables for each grouping
+                    for chart in group_data:
+                        chart_df = pd.DataFrame(chart)
+                        st.write(f"Chart Data for Group {group_id}")
+                        st.dataframe(chart_df)
 
 st.sidebar.header("Additional Features")
 show_expanded = st.sidebar.checkbox("Show Expanded")
