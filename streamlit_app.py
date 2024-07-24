@@ -1,163 +1,93 @@
 import streamlit as st
-import requests
 import pandas as pd
-import matplotlib.pyplot as plt
+import requests
+import json
 
-# API endpoints
-API_ENDPOINTS = {
-    'Airports': 'https://api.aviationapi.com/v1/airports?apt=',
-    'Preferred Routes': 'https://api.aviationapi.com/v1/preferred-routes',
-    'Weather METAR': 'https://api.aviationapi.com/v1/weather/metar?apt=',
-    'VATSIM Pilots': 'https://api.aviationapi.com/v1/vatsim/pilots',
-    'Charts': 'https://api.aviationapi.com/v1/charts?apt={icao}&group={group}'
-}
-
-# Function to fetch data from the API
-def fetch_data(api_name, endpoint, params=None):
-    try:
-        response = requests.get(endpoint, params=params)
-        response.raise_for_status()
-        return response.json()
-    except requests.exceptions.RequestException as e:
-        st.error(f"Error fetching data from {api_name}: {e}")
-        return None
-
-# Convert DMS to Decimal Degrees
 def dms_to_dd(dms):
-    parts = dms[:-1].split('-')
-    degrees = float(parts[0])
-    minutes = float(parts[1])
-    seconds = float(parts[2])
-    direction = dms[-1]
-    
-    dd = degrees + minutes / 60 + seconds / 3600
-    if direction in ['W', 'S']:
+    """Convert DMS (Degrees, Minutes, Seconds) to Decimal Degrees."""
+    degrees, minutes, seconds, direction = float(dms[:-1].split('-')[0]), float(dms.split('-')[1]), float(dms.split('-')[2]), dms[-1]
+    dd = degrees + (minutes / 60) + (seconds / 3600)
+    if direction in ['S', 'W']:
         dd *= -1
     return dd
 
-# Function to display airport data
-def display_airport_data(airport, show_map):
-    st.header(f"Airport: {airport.get('facility_name', 'N/A')} ({airport.get('faa_ident', 'N/A')})")
-    st.subheader(f"ICAO Code: {airport.get('icao_ident', 'N/A')}")
-    st.write(f"City: {airport.get('city', 'N/A')}")
-    st.write(f"State: {airport.get('state_full', 'N/A')}")
-    st.write(f"Elevation: {airport.get('elevation', 'N/A')} feet")
-    st.write(f"Control Tower: {airport.get('control_tower', 'N/A')}")
-    st.write(f"UNICOM Frequency: {airport.get('unicom', 'N/A')}")
+def fetch_airport_data(icao):
+    """Fetch data from the airport API."""
+    api_url = f"https://api.aviationapi.com/v1/airports?apt={icao}"
+    response = requests.get(api_url)
+    return response.json()
 
-    if show_map:
-        # Convert latitude and longitude to decimal degrees
-        lat_dd = dms_to_dd(airport.get('latitude', '0-0-0.0N'))
-        lon_dd = dms_to_dd(airport.get('longitude', '0-0-0.0E'))
+def fetch_charts(icao, group):
+    """Fetch charts data from the API."""
+    api_url = f"https://api.aviationapi.com/v1/charts?apt={icao}&group={group}"
+    response = requests.get(api_url)
+    return response.json()
 
-        st.map(pd.DataFrame({'lat': [lat_dd], 'lon': [lon_dd]}))
+st.title("Airport Data and Charts")
 
-    # Interactive table
-    st.write("Airport Data Table")
-    st.dataframe(pd.DataFrame([airport]))
+# Checkbox for Map View
+map_view_enabled = st.checkbox("Enable Map View", value=True)
 
-    # Charts (example data)
-    chart_data = pd.DataFrame({
-        'Attribute': ['Elevation', 'Control Tower'],
-        'Value': [int(airport.get('elevation', 0)), 1 if airport.get('control_tower', 'N') == 'Y' else 0]
-    })
+# Input for ICAO Code
+icao_code = st.text_input("Enter ICAO Code", "KMIA")
 
-    st.write("Charts")
-    st.line_chart(chart_data.set_index('Attribute')['Value'])
-    st.area_chart(chart_data.set_index('Attribute')['Value'])
-    st.bar_chart(chart_data.set_index('Attribute')['Value'])
+# Dropdown for Grouping Charts
+group_option = st.selectbox(
+    "Select Chart Group",
+    options={
+        1: "General, Departures, Arrivals, Approaches",
+        2: "Airport Diagram only",
+        3: "General only",
+        4: "Departures only",
+        5: "Arrivals only",
+        6: "Approaches only",
+        7: "Everything but General"
+    }
+)
 
-# Function to display preferred routes data
-def display_preferred_routes(routes):
-    st.header("Preferred Routes")
-    if routes:
-        routes_df = pd.DataFrame(routes)
-        st.write("Preferred Routes Table")
-        st.dataframe(routes_df)
-    else:
-        st.warning("No preferred routes available.")
+# Fetch and Display Airport Data
+if icao_code:
+    airport_data = fetch_airport_data(icao_code)
+    if airport_data:
+        airport = airport_data.get(icao_code, [])[0]
+        if airport:
+            st.subheader(f"Airport Information for {icao_code}")
+            st.write(f"Facility Name: {airport.get('facility_name')}")
+            st.write(f"City: {airport.get('city')}")
+            st.write(f"State: {airport.get('state')}")
+            st.write(f"State Full: {airport.get('state_full')}")
+            st.write(f"Latitude: {dms_to_dd(airport.get('latitude'))}")
+            st.write(f"Longitude: {dms_to_dd(airport.get('longitude'))}")
+            st.write(f"Control Tower: {airport.get('control_tower')}")
+            # Add more fields as needed
 
-# Function to display weather data
-def display_weather_data(weather):
-    st.header("Weather Data")
-    if weather:
-        st.write(weather)
-    else:
-        st.warning("No weather data available.")
+            # If Map View is enabled
+            if map_view_enabled:
+                st.subheader("Map View")
+                map_data = {
+                    'Latitude': [dms_to_dd(airport.get('latitude'))],
+                    'Longitude': [dms_to_dd(airport.get('longitude'))],
+                    'Facility Name': [airport.get('facility_name')]
+                }
+                df_map = pd.DataFrame(map_data)
+                st.map(df_map)
 
-# Function to display VATSIM pilots data
-def display_vatsim_pilots(pilots):
-    st.header("VATSIM Pilots")
-    if pilots:
-        pilots_df = pd.DataFrame(pilots)
-        st.write("VATSIM Pilots Table")
-        st.dataframe(pilots_df)
-    else:
-        st.warning("No VATSIM pilots data available.")
-
-# Function to display charts data
-def display_charts_data(icao_code, group):
-    st.header(f"Charts for ICAO Code: {icao_code}")
-
-    charts_data = fetch_data('Charts', API_ENDPOINTS['Charts'].format(icao=icao_code, group=group))
-    
+# Fetch and Display Charts Data
+if icao_code and group_option:
+    charts_data = fetch_charts(icao_code, group_option)
     if charts_data:
-        grouped_data = {}
-        for chart in charts_data:
-            grp = chart.get('group')
-            if grp not in grouped_data:
-                grouped_data[grp] = []
-            grouped_data[grp].append(chart)
-        
-        for grp, data in grouped_data.items():
-            st.subheader(f"Group {grp} Charts")
-            df = pd.DataFrame(data)
-            st.write(f"Displaying charts for group {grp}")
-            st.dataframe(df)
-    else:
-        st.warning("No charts data available.")
-
-# Main app logic
-st.title("Aviation Data Explorer")
-
-api_option = st.sidebar.radio("Select API", list(API_ENDPOINTS.keys()))
-
-if api_option == 'Airports':
-    icao_code = st.text_input("Enter ICAO code (e.g., KMIA)")
-    show_map = st.checkbox("Enable Map View", value=True)
-    if st.button("Fetch Airport Data"):
-        data = fetch_data(api_option, f"{API_ENDPOINTS['Airports']}{icao_code}")
-        if data:
-            st.write("Debugging Data Output: ", data)  # Debugging statement
-            airport = data.get(icao_code, [None])[0]  # Access the first airport in the list
-            if airport:
-                display_airport_data(airport, show_map)
-            else:
-                st.warning("Airport not found.")
-                
-elif api_option == 'Preferred Routes':
-    if st.button("Fetch Preferred Routes Data"):
-        data = fetch_data(api_option, API_ENDPOINTS['Preferred Routes'])
-        display_preferred_routes(data)
-
-elif api_option == 'Weather METAR':
-    icao_code = st.text_input("Enter ICAO code (e.g., KMIA)")
-    if st.button("Fetch Weather Data"):
-        data = fetch_data(api_option, f"{API_ENDPOINTS['Weather METAR']}{icao_code}")
-        display_weather_data(data)
-
-elif api_option == 'VATSIM Pilots':
-    if st.button("Fetch VATSIM Pilots Data"):
-        data = fetch_data(api_option, API_ENDPOINTS['VATSIM Pilots'])
-        display_vatsim_pilots(data)
-
-elif api_option == 'Charts':
-    icao_code = st.text_input("Enter ICAO code (e.g., KMIA)")
-    group = st.selectbox("Select Chart Group", [1, 2, 3, 4, 5, 6, 7])
-    if st.button("Fetch Charts Data"):
-        display_charts_data(icao_code, group)
-
-st.sidebar.header("Additional Features")
-show_expanded = st.sidebar.checkbox("Show Expanded")
-if show_expanded:
-    st.sidebar.info("Expanded features are shown.")
+        st.subheader(f"Charts Data for {icao_code} (Group {group_option})")
+        for group, group_name in {
+            1: "General, Departures, Arrivals, Approaches",
+            2: "Airport Diagram only",
+            3: "General only",
+            4: "Departures only",
+            5: "Arrivals only",
+            6: "Approaches only",
+            7: "Everything but General"
+        }.items():
+            group_data = charts_data.get(str(group), [])
+            if group_data:
+                st.write(f"### {group_name}")
+                df_group = pd.DataFrame(group_data)
+                st.dataframe(df_group)
