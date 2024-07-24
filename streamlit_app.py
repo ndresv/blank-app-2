@@ -9,7 +9,7 @@ API_ENDPOINTS = {
     'Preferred Routes': 'https://api.aviationapi.com/v1/preferred-routes',
     'Weather METAR': 'https://api.aviationapi.com/v1/weather/metar?apt=',
     'VATSIM Pilots': 'https://api.aviationapi.com/v1/vatsim/pilots',
-    'Charts': 'https://api.aviationapi.com/v1/charts?apt={icao}&group={group}'
+    'Charts': 'https://api.aviationapi.com/v1/charts'
 }
 
 # Function to fetch data from the API
@@ -96,26 +96,27 @@ def display_vatsim_pilots(pilots):
         st.warning("No VATSIM pilots data available.")
 
 # Function to display chart data
-def display_chart_data(charts):
+def display_charts_data(charts):
     st.header("Chart Data")
     if charts:
-        # Create DataFrame from chart data
         charts_df = pd.DataFrame(charts)
-        
-        # Display interactive table
         st.write("Charts Table")
         st.dataframe(charts_df)
 
-        # Example charts based on DataFrame
+        # Create charts
         if not charts_df.empty:
-            st.write("Line Chart")
-            st.line_chart(charts_df[['state', 'city']].set_index('state'))
-            
-            st.write("Bar Chart")
-            st.bar_chart(charts_df[['state', 'city']].set_index('state'))
-            
-            st.write("Area Chart")
-            st.area_chart(charts_df[['state', 'city']].set_index('state'))
+            for chart_group in charts_df['group'].unique():
+                group_df = charts_df[charts_df['group'] == chart_group]
+                st.subheader(f"Group {chart_group} Charts")
+                
+                # Display line chart
+                st.line_chart(group_df[['state', 'state_full', 'city', 'facility_name']].set_index('facility_name'))
+                
+                # Display area chart
+                st.area_chart(group_df[['state', 'state_full', 'city', 'facility_name']].set_index('facility_name'))
+                
+                # Display bar chart
+                st.bar_chart(group_df[['state', 'state_full', 'city', 'facility_name']].set_index('facility_name'))
     else:
         st.warning("No chart data available.")
 
@@ -130,12 +131,13 @@ if api_option == 'Airports':
     if st.button("Fetch Airport Data"):
         data = fetch_data(api_option, f"{API_ENDPOINTS['Airports']}{icao_code}")
         if data:
+            st.write("Debugging Data Output: ", data)  # Debugging statement
             airport = data.get(icao_code, [None])[0]  # Access the first airport in the list
             if airport:
                 display_airport_data(airport, show_map)
             else:
                 st.warning("Airport not found.")
-
+                
 elif api_option == 'Preferred Routes':
     if st.button("Fetch Preferred Routes Data"):
         data = fetch_data(api_option, API_ENDPOINTS['Preferred Routes'])
@@ -163,10 +165,11 @@ elif api_option == 'Charts':
         "6 -> Approaches only",
         "7 -> Everything but General"
     ])
-    group_number = group.split("->")[0].strip()
+    
     if st.button("Fetch Charts Data"):
-        data = fetch_data(api_option, API_ENDPOINTS['Charts'].format(icao=icao_code, group=group_number))
-        display_chart_data(data)
+        params = {'apt': icao_code, 'group': group.split('->')[0].strip()}
+        data = fetch_data(api_option, API_ENDPOINTS['Charts'], params=params)
+        display_charts_data(data)
 
 st.sidebar.header("Additional Features")
 show_expanded = st.sidebar.checkbox("Show Expanded")
