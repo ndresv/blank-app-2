@@ -9,7 +9,7 @@ API_ENDPOINTS = {
     'Preferred Routes': 'https://api.aviationapi.com/v1/preferred-routes',
     'Weather METAR': 'https://api.aviationapi.com/v1/weather/metar?apt=',
     'VATSIM Pilots': 'https://api.aviationapi.com/v1/vatsim/pilots',
-    'Charts': 'https://api.aviationapi.com/v1/charts'
+    'Charts': 'https://api.aviationapi.com/v1/charts?apt={apt}&group={group}'
 }
 
 # Function to fetch data from the API
@@ -95,23 +95,41 @@ def display_vatsim_pilots(pilots):
     else:
         st.warning("No VATSIM pilots data available.")
 
-# Function to display charts data in tables
-def display_charts_data(charts):
-    st.header("Charts Data")
+# Function to display charts data
+def display_charts_data(data, group):
+    if data:
+        st.header(f"Charts Data - Group {group}")
+        if group == '1':
+            group_name = 'General, Departures, Arrivals, Approaches'
+        elif group == '2':
+            group_name = 'Airport Diagram only'
+        elif group == '3':
+            group_name = 'General only'
+        elif group == '4':
+            group_name = 'Departures only'
+        elif group == '5':
+            group_name = 'Arrivals only'
+        elif group == '6':
+            group_name = 'Approaches only'
+        elif group == '7':
+            group_name = 'Everything but General'
+        else:
+            group_name = 'Unknown Group'
 
-    # Display the charts data by grouping
-    for group_name, group_data in charts.items():
-        st.subheader(f"Group: {group_name}")
-        group_df = pd.DataFrame(group_data)
-        st.dataframe(group_df)
+        st.write(f"Displaying charts for Group: {group_name}")
 
-        # Optionally: Display charts for each group
-        if not group_df.empty:
-            st.write(f"Charts for Group: {group_name}")
-            if 'value' in group_df.columns:
-                st.line_chart(group_df.set_index('value'))
-                st.area_chart(group_df.set_index('value'))
-                st.bar_chart(group_df.set_index('value'))
+        charts_df = pd.DataFrame(data)
+        st.write("Charts Table")
+        st.dataframe(charts_df)
+
+        # Example charts based on the data
+        if not charts_df.empty:
+            st.write("Charts")
+            st.line_chart(charts_df[['some_numeric_column']])  # Replace 'some_numeric_column' with actual numeric column
+            st.area_chart(charts_df[['some_numeric_column']])  # Replace 'some_numeric_column' with actual numeric column
+            st.bar_chart(charts_df[['some_numeric_column']])  # Replace 'some_numeric_column' with actual numeric column
+    else:
+        st.warning("No charts data available.")
 
 # Main app logic
 st.title("Aviation Data Explorer")
@@ -149,13 +167,10 @@ elif api_option == 'VATSIM Pilots':
 
 elif api_option == 'Charts':
     apt_code = st.text_input("Enter ICAO code (e.g., KMIA)")
-    group = st.selectbox("Select Grouping", [1, 2, 3, 4, 5, 6, 7])
+    group = st.selectbox("Select Chart Group", [1, 2, 3, 4, 5, 6, 7])
     if st.button("Fetch Charts Data"):
-        params = {'apt': apt_code, 'group': group}
-        data = fetch_data(api_option, API_ENDPOINTS['Charts'], params=params)
-        if data:
-            st.write("Debugging Charts Data Output: ", data)  # Debugging statement
-            display_charts_data(data)
+        data = fetch_data(api_option, API_ENDPOINTS['Charts'].format(apt=apt_code, group=group))
+        display_charts_data(data, group)
 
 st.sidebar.header("Additional Features")
 show_expanded = st.sidebar.checkbox("Show Expanded")
