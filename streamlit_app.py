@@ -8,7 +8,7 @@ API_ENDPOINTS = {
     'Airports': 'https://api.aviationapi.com/v1/airports?apt=',
     'Preferred Routes': 'https://api.aviationapi.com/v1/preferred-routes',
     'Weather METAR': 'https://api.aviationapi.com/v1/weather/metar?apt=',
-    'VATSIM Pilots': 'https://api.aviationapi.com/v1/vatsim/pilots'
+    'VATSIM Pilots': 'https://api.aviationapi.com/v1/vatsim/pilots?apt='
 }
 
 # Function to fetch data from the API
@@ -122,8 +122,9 @@ elif api_option == 'Weather METAR':
         display_weather_data(data)
 
 elif api_option == 'VATSIM Pilots':
+    icao_code = st.text_input("Enter ICAO code (e.g., KMIA)")
     if st.button("Fetch VATSIM Pilots Data"):
-        data = fetch_data(api_option, API_ENDPOINTS['VATSIM Pilots'])
+        data = fetch_data(api_option, f"{API_ENDPOINTS['VATSIM Pilots']}{icao_code}")
         display_vatsim_pilots(data)
 
 st.sidebar.header("Additional Features")
