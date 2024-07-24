@@ -83,7 +83,6 @@ def display_charts_data(charts_data):
         for group in charts_data.keys():
             st.subheader(f"Group: {CHART_GROUPS.get(group, 'Unknown Group')}")
             charts_df = pd.DataFrame(charts_data[group])
-            st.write(f"{CHART_GROUPS.get(group, 'Unknown Group')} Table")
             st.dataframe(charts_df)
     else:
         st.warning("No charts data available.")
