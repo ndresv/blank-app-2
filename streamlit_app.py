@@ -101,16 +101,21 @@ if api_option == 'Airports':
     if st.button("Fetch Airport Data"):
         data = fetch_data(api_option, API_ENDPOINTS['Airports'], {'apt': icao_code})
         if data:
-            if data['icao_ident'] == icao_code:
-    airport = data
-else:
-    airport = None
-
-            if airport:
+            # Handle single dictionary format
+            if isinstance(data, dict) and data.get('icao_ident') == icao_code:
+                airport = data
                 display_airport_data(airport)
+            elif isinstance(data, list):
+                # Handle list format (e.g., if multiple records are returned)
+                airport = next((item for item in data if item['icao_ident'] == icao_code), None)
+                if airport:
+                    display_airport_data(airport)
+                else:
+                    st.warning("Airport not found in the list.")
             else:
-                st.warning("Airport not found.")
-                
+                st.warning("Invalid data format received.")
+        else:
+            st.warning("No data received.")
 elif api_option == 'Preferred Routes':
     st.button("Fetch Preferred Routes Data")
     data = fetch_data(api_option, API_ENDPOINTS['Preferred Routes'])
