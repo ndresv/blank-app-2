@@ -70,41 +70,40 @@ def display_airport_data(airport, show_map):
 # Function to display charts data
 def display_charts_data(charts_data):
     st.header("Charts Data")
-    if not charts_data:
-        st.warning("No charts data available.")
-        return
 
-    # Flatten the JSON data based on grouping
-    for group, data in charts_data.items():
-        if group in ["1", "7"]:
+    if charts_data:
+        for group, data in charts_data.items():
+            if group in ["General", "DP"]:
+                data = data.get("General", []) if group == "General" else data.get("DP", [])
+
             if isinstance(data, dict):
-                if "General" in data:
-                    data = data["General"]
-                elif "DP" in data:
-                    data = data["DP"]
-        else:
-            # Convert data directly if not grouping 1 or 7
-            data = [entry for entry in data.values()]
-        
-        # Create DataFrame from the data
-        charts_df = pd.DataFrame(data)
-        
-        # Display table
-        st.write(f"Group {group} Table")
-        st.dataframe(charts_df)
-        
-        # Create and display charts
-        if not charts_df.empty:
-            st.write(f"Group {group} Charts")
-            
-            # Line Chart
-            st.line_chart(charts_df.set_index('state_full').iloc[:, 0])
-            
-            # Area Chart
-            st.area_chart(charts_df.set_index('state_full').iloc[:, 0])
-            
-            # Bar Chart
-            st.bar_chart(charts_df.set_index('state_full').iloc[:, 0])
+                st.warning(f"Unexpected data format for group: {group}")
+                continue
+
+            charts_df = pd.DataFrame(data)
+
+            st.subheader(f"Group: {group}")
+            st.write(f"{group} Table")
+            st.dataframe(charts_df)
+
+            # Line chart
+            if 'state' in charts_df.columns and 'facility_name' in charts_df.columns:
+                st.write("Line Chart")
+                line_chart_data = charts_df[['state', 'facility_name']].groupby('state').size()
+                st.line_chart(line_chart_data)
+
+            # Area chart
+            if 'state' in charts_df.columns and 'facility_name' in charts_df.columns:
+                st.write("Area Chart")
+                area_chart_data = charts_df[['state', 'facility_name']].groupby('state').size()
+                st.area_chart(area_chart_data)
+
+            # Bar chart
+            if 'state' in charts_df.columns and 'facility_name' in charts_df.columns:
+                st.write("Bar Chart")
+                bar_chart_data = charts_df[['state', 'facility_name']].groupby('state').size()
+                st.bar_chart(bar_chart_data)
+
     else:
         st.warning("No charts data available.")
 
