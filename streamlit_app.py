@@ -14,11 +14,13 @@ API_ENDPOINTS = {
 
 # Grouping descriptions
 CHART_GROUPS = {
+    "1": "General, Departures, Arrivals, Approaches",
     "2": "Airport Diagram only",
     "3": "General only",
     "4": "Departures only",
     "5": "Arrivals only",
     "6": "Approaches only",
+    "7": "Everything but General"
 }
 
 # Function to fetch data from the API
@@ -80,11 +82,13 @@ def display_airport_data(airport, show_map):
 def display_charts_data(charts_data):
     st.header("Charts Data")
     if charts_data:
-        for group in charts_data.keys():
-            description = CHART_GROUPS.get(group, 'Unknown Group')
-            st.subheader(f"Group: {description}")
-            charts_df = pd.DataFrame(charts_data[group])
-            st.dataframe(charts_df)
+        for group in CHART_GROUPS.keys():
+            if group in charts_data:
+                st.subheader(f"Group: {CHART_GROUPS.get(group, 'Unknown Group')}")
+                charts_df = pd.DataFrame(charts_data[group])
+                st.dataframe(charts_df)
+            else:
+                st.warning(f"No data available for {CHART_GROUPS.get(group, 'Unknown Group')}")
     else:
         st.warning("No charts data available.")
 
@@ -152,11 +156,12 @@ elif api_option == 'VATSIM Pilots':
 elif api_option == 'Charts':
     icao_code = st.text_input("Enter ICAO code (e.g., KMIA)")
     group_description = st.selectbox("Select Chart Group", list(CHART_GROUPS.values()))
-    # Find the group key from description
     group = next((key for key, value in CHART_GROUPS.items() if value == group_description), None)
-    if group:
-        if st.button("Fetch Charts Data"):
+    
+    if st.button("Fetch Charts Data"):
+        if group:
             data = fetch_data('Charts', API_ENDPOINTS['Charts'].format(icao=icao_code, group=group))
             display_charts_data(data)
-    else:
-        st.warning("Invalid group selected.")
+        else:
+            st.warning("Invalid group selected.")
+
