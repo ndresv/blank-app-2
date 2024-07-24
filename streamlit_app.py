@@ -5,132 +5,153 @@ import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 import pydeck as pdk
 
-# API URLs
-AIRPORTS_API_URL = "https://api.aviationapi.com/v1/airports"
-WEATHER_METAR_API_URL = "https://api.aviationapi.com/v1/weather/metar"
-VATSIM_PILOTS_API_URL = "https://api.aviationapi.com/v1/vatsim/pilots"
+# API Endpoints
+AVIATION_API_BASE = "https://api.aviationapi.com/v1"
 
-# Function to fetch data from APIs
-def fetch_data(api_url, params=None):
-    response = requests.get(api_url, params=params)
+# Functions to Fetch Data
+def fetch_airport_data(icao_code):
+    response = requests.get(f"{AVIATION_API_BASE}/airports/{icao_code}")
     if response.status_code == 200:
         return response.json()
     else:
-        st.error(f"Error fetching data: {response.status_code} - {response.text}")
-        return None
+        st.error("Error fetching airport data.")
+        return {}
 
-# Sidebar options
-st.sidebar.header("Options")
-api_choice = st.sidebar.selectbox("Choose API", ["Airports", "Weather METAR", "VATSIM Pilots"])
-airport_code = st.sidebar.text_input("Enter ICAO Airport Code (e.g., KMIA)", "KMIA")
+def fetch_weather_data(icao_code):
+    response = requests.get(f"{AVIATION_API_BASE}/weather/metar?apt={icao_code}")
+    if response.status_code == 200:
+        return response.json()
+    else:
+        st.error("Error fetching weather data.")
+        return {}
 
-if api_choice == "Airports":
-    if airport_code:
-        st.sidebar.button("Get Airport Data")
-        data = fetch_data(AIRPORTS_API_URL, params={"apt": airport_code})
-        if data:
-            st.write(f"### Airport Data for {airport_code}")
-            st.dataframe(pd.DataFrame([data]))
+def fetch_vatsim_pilots_data(icao_code):
+    response = requests.get(f"{AVIATION_API_BASE}/vatsim/pilots?apt={icao_code}")
+    if response.status_code == 200:
+        return response.json()
+    else:
+        st.error("Error fetching VATSIM pilots data.")
+        return {}
 
-            # Map of the airport
-            st.write("### Map of the Selected Airport")
-            location = {"lat": data["latitude"], "lon": data["longitude"]}
-            map_data = pd.DataFrame([location])
-            st.pydeck_chart(pdk.Deck(
-                initial_view_state=pdk.ViewState(
-                    latitude=location["lat"],
-                    longitude=location["lon"],
-                    zoom=10
-                ),
-                layers=[
-                    pdk.Layer(
-                        "ScatterplotLayer",
-                        data=map_data,
-                        get_position="[lon, lat]",
-                        auto_highlight=True,
-                        radius_scale=6,
-                        radius_min_pixels=1,
-                        radius_max_pixels=100,
-                        line_width_min_pixels=1,
-                        get_fill_color="[200, 30, 0, 160]",
-                        get_line_color="[0, 0, 0, 255]"
-                    )
-                ]
-            ))
+def fetch_charts_data(icao_code):
+    response = requests.get(f"{AVIATION_API_BASE}/charts?apt={icao_code}")
+    if response.status_code == 200:
+        return response.json()
+    else:
+        st.error("Error fetching charts data.")
+        return {}
 
-elif api_choice == "Weather METAR":
-    if airport_code:
-        st.sidebar.button("Get Weather Data")
-        data = fetch_data(WEATHER_METAR_API_URL, params={"apt": airport_code})
-        if data:
-            st.write(f"### METAR Data for {airport_code}")
-            st.dataframe(pd.DataFrame([data]))
+def fetch_preferred_routes_data(icao_code):
+    response = requests.get(f"{AVIATION_API_BASE}/preferred-routes?apt={icao_code}")
+    if response.status_code == 200:
+        return response.json()
+    else:
+        st.error("Error fetching preferred routes data.")
+        return {}
 
-            # Line chart for temperature
-            st.write("### Temperature Over Time")
-            dates = pd.to_datetime([data["time_of_obs"]])
-            temperatures = [float(data["temp"])]
-            temp_df = pd.DataFrame({"Date": dates, "Temperature": temperatures})
-            st.line_chart(temp_df.set_index("Date"))
+# Streamlit Application
+st.title('Aviation Data Dashboard')
 
-            # Area chart for visibility
-            st.write("### Visibility Over Time")
-            visibilities = [float(data["visibility"])]
-            visibility_df = pd.DataFrame({"Date": dates, "Visibility": visibilities})
-            st.area_chart(visibility_df.set_index("Date"))
+# Sidebar for User Inputs
+st.sidebar.header('User Inputs')
+icao_code = st.sidebar.text_input('Enter ICAO Code', 'KMIA')
+show_charts = st.sidebar.checkbox('Show Charts')
+show_weather = st.sidebar.checkbox('Show Weather')
+show_pilots = st.sidebar.checkbox('Show VATSIM Pilots')
+show_routes = st.sidebar.checkbox('Show Preferred Routes')
 
-elif api_choice == "VATSIM Pilots":
-    if airport_code:
-        st.sidebar.button("Get VATSIM Data")
-        data = fetch_data(VATSIM_PILOTS_API_URL, params={"apt": airport_code})
-        if data:
-            st.write(f"### VATSIM Pilots Data for {airport_code}")
-            st.dataframe(pd.DataFrame(data))
+if icao_code:
+    # Fetch and Display Airport Data
+    airport_data = fetch_airport_data(icao_code)
+    if airport_data:
+        st.subheader(f"Airport Information: {airport_data.get('name', 'N/A')}")
+        st.write(airport_data)
 
-            # Bar chart for number of pilots
-            st.write("### Number of Pilots by Aircraft Type")
-            aircraft_types = pd.Series([d["aircraft"] for d in data]).value_counts()
-            st.bar_chart(aircraft_types)
+        # Map showing the airport location
+        st.subheader('Airport Location Map')
+        st.pydeck_chart(pdk.Deck(
+            initial_view_state=pdk.ViewState(
+                latitude=airport_data.get('latitude', 0),
+                longitude=airport_data.get('longitude', 0),
+                zoom=10,
+                pitch=0
+            ),
+            layers=[
+                pdk.Layer(
+                    "ScatterplotLayer",
+                    data=[{
+                        'latitude': airport_data.get('latitude', 0),
+                        'longitude': airport_data.get('longitude', 0)
+                    }],
+                    get_position=['longitude', 'latitude'],
+                    get_color=[255, 0, 0],
+                    get_radius=1000
+                )
+            ]
+        ))
 
-            # Map of pilots
-            st.write("### Map of Pilots' Locations")
-            pilots_data = pd.DataFrame([
-                {"lat": float(p["latitude"]), "lon": float(p["longitude"])}
-                for p in data if p["latitude"] and p["longitude"]
-            ])
-            st.pydeck_chart(pdk.Deck(
-                initial_view_state=pdk.ViewState(
-                    latitude=pilots_data["lat"].mean(),
-                    longitude=pilots_data["lon"].mean(),
-                    zoom=5
-                ),
-                layers=[
-                    pdk.Layer(
-                        "ScatterplotLayer",
-                        data=pilots_data,
-                        get_position="[lon, lat]",
-                        auto_highlight=True,
-                        radius_scale=6,
-                        radius_min_pixels=1,
-                        radius_max_pixels=100,
-                        line_width_min_pixels=1,
-                        get_fill_color="[0, 200, 30, 160]",
-                        get_line_color="[0, 0, 0, 255]"
-                    )
-                ]
-            ))
+    # Fetch and Display Charts Data
+    if show_charts:
+        charts_data = fetch_charts_data(icao_code)
+        if charts_data:
+            st.subheader('Charts Data')
+            st.write(charts_data)
+            # Example chart - replace with actual data
+            df_charts = pd.DataFrame(charts_data)
+            st.line_chart(df_charts['value'])
+            st.area_chart(df_charts['value'])
+            st.bar_chart(df_charts['value'])
 
-# Additional Widgets
-st.sidebar.write("### Additional Widgets")
-if st.sidebar.checkbox("Show Airport Data", value=True):
-    st.sidebar.selectbox("Select Metric", ["Flights", "Weather", "Traffic"])
+    # Fetch and Display Weather Data
+    if show_weather:
+        weather_data = fetch_weather_data(icao_code)
+        if weather_data:
+            st.subheader('Weather Data')
+            st.write(weather_data)
 
-# Feedback Boxes
-if api_choice == "Airports" and data:
-    st.success("Successfully fetched airport data!")
-elif api_choice == "Weather METAR" and data:
-    st.info("Weather data retrieved successfully.")
-elif api_choice == "VATSIM Pilots" and data:
-    st.warning("VATSIM data loaded. Check map and table for details.")
-else:
-    st.error("No data available. Please check the API and try again.")
+    # Fetch and Display VATSIM Pilots Data
+    if show_pilots:
+        pilots_data = fetch_vatsim_pilots_data(icao_code)
+        if pilots_data:
+            st.subheader('VATSIM Pilots Data')
+            st.write(pilots_data)
+
+    # Fetch and Display Preferred Routes Data
+    if show_routes:
+        routes_data = fetch_preferred_routes_data(icao_code)
+        if routes_data:
+            st.subheader('Preferred Routes Data')
+            st.write(routes_data)
+
+# Add Widgets
+st.sidebar.header('Widgets')
+selected_option = st.sidebar.radio('Choose Widget', ['None', 'Slider', 'Text Input', 'Selectbox'])
+if selected_option == 'Slider':
+    slider_value = st.slider('Select a value', 0, 100, 25)
+    st.write(f'Slider Value: {slider_value}')
+elif selected_option == 'Text Input':
+    text_input_value = st.text_input('Enter some text', 'Sample Text')
+    st.write(f'Text Input Value: {text_input_value}')
+elif selected_option == 'Selectbox':
+    selectbox_value = st.selectbox('Choose an option', ['Option 1', 'Option 2', 'Option 3'])
+    st.write(f'Selected Option: {selectbox_value}')
+
+# Feedback and Message Boxes
+st.success('This is a success message!')
+st.info('This is an informational message!')
+st.warning('This is a warning message!')
+st.error('This is an error message!')
+
+# Optionally, include a progress bar
+st.subheader('Progress Bar')
+progress = st.progress(0)
+for i in range(100):
+    progress.progress(i + 1)
+
+# Optional Media Elements
+st.subheader('Optional Media Elements')
+st.image('https://example.com/image.png', caption='Sample Image')
+
+# Layout Containers
+with st.expander("Expand for more details"):
+    st.write("Here are more details about the selected airport.")
