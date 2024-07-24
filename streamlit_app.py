@@ -17,7 +17,9 @@ def fetch_data(api_name, endpoint, params=None):
     try:
         response = requests.get(endpoint, params=params)
         response.raise_for_status()
-        return response.json()
+        data = response.json()
+        st.write(f"Debugging Data Fetch: URL={response.url}, Response={data}")  # Debugging statement
+        return data
     except requests.exceptions.RequestException as e:
         st.error(f"Error fetching data from {api_name}: {e}")
         return None
@@ -73,10 +75,9 @@ def display_charts_data(data):
         st.warning("No data received.")
         return
 
-    # Verify the structure of the data
     st.write("Raw Data Output:", data)  # Debugging statement
 
-    # Separate data based on the groupings
+    # Adjust based on actual data structure
     groupings = ['General', 'Departures', 'Arrivals', 'Approaches']
     for group in groupings:
         if group in data:
@@ -126,7 +127,6 @@ if api_option == 'Airports':
     if st.button("Fetch Airport Data"):
         data = fetch_data(api_option, f"{API_ENDPOINTS['Airports']}{icao_code}")
         if data:
-            st.write("Debugging Data Output: ", data)  # Debugging statement
             airport = data.get(icao_code, [None])[0]  # Access the first airport in the list
             if airport:
                 display_airport_data(airport, show_map)
