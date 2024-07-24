@@ -8,7 +8,8 @@ API_ENDPOINTS = {
     'Airports': 'https://api.aviationapi.com/v1/airports?apt=',
     'Preferred Routes': 'https://api.aviationapi.com/v1/preferred-routes',
     'Weather METAR': 'https://api.aviationapi.com/v1/weather/metar?apt=',
-    'VATSIM Pilots': 'https://api.aviationapi.com/v1/vatsim/pilots?apt='
+    'VATSIM Pilots': 'https://api.aviationapi.com/v1/vatsim/pilots',
+    'Charts': 'https://api.aviationapi.com/v1/charts'
 }
 
 # Function to fetch data from the API
@@ -35,7 +36,7 @@ def dms_to_dd(dms):
     return dd
 
 # Function to display airport data
-def display_airport_data(airport):
+def display_airport_data(airport, show_map):
     st.header(f"Airport: {airport.get('facility_name', 'N/A')} ({airport.get('faa_ident', 'N/A')})")
     st.subheader(f"ICAO Code: {airport.get('icao_ident', 'N/A')}")
     st.write(f"City: {airport.get('city', 'N/A')}")
@@ -94,6 +95,16 @@ def display_vatsim_pilots(pilots):
     else:
         st.warning("No VATSIM pilots data available.")
 
+# Function to display charts data
+def display_charts_data(charts):
+    st.header("Charts")
+    if charts:
+        charts_df = pd.DataFrame(charts)
+        st.write("Charts Table")
+        st.dataframe(charts_df)
+    else:
+        st.warning("No charts available.")
+
 # Main app logic
 st.title("Aviation Data Explorer")
 
@@ -105,14 +116,13 @@ if api_option == 'Airports':
     if st.button("Fetch Airport Data"):
         data = fetch_data(api_option, f"{API_ENDPOINTS['Airports']}{icao_code}")
         if data:
-            # st.write("Debugging Data Output: ", data)  # Debugging statement
+            st.write("Debugging Data Output: ", data)  # Debugging statement
             airport = data.get(icao_code, [None])[0]  # Access the first airport in the list
             if airport:
-                st.success("Airport found!")
-                display_airport_data(airport)
+                display_airport_data(airport, show_map)
             else:
-                st.warning("Airport not found!")
-                
+                st.warning("Airport not found.")
+
 elif api_option == 'Preferred Routes':
     if st.button("Fetch Preferred Routes Data"):
         data = fetch_data(api_option, API_ENDPOINTS['Preferred Routes'])
@@ -125,7 +135,14 @@ elif api_option == 'Weather METAR':
         display_weather_data(data)
 
 elif api_option == 'VATSIM Pilots':
-    icao_code = st.text_input("Enter ICAO code (e.g., KMIA)")
     if st.button("Fetch VATSIM Pilots Data"):
-        data = fetch_data(api_option, f"{API_ENDPOINTS['VATSIM Pilots']}{icao_code}")
+        data = fetch_data(api_option, API_ENDPOINTS['VATSIM Pilots'])
         display_vatsim_pilots(data)
+
+elif api_option == 'Charts':
+    icao_code = st.text_input("Enter ICAO code (e.g., KMIA)")
+    group = st.selectbox("Select Chart Group", [1, 2, 3, 4, 5, 6, 7], index=0, format_func=lambda x: f"Group {x}")
+    if st.button("Fetch Charts Data"):
+        params = {'apt': icao_code, 'group': group}
+        data = fetch_data(api_option, API_ENDPOINTS['Charts'], params=params)
+        display_charts_data(data)
