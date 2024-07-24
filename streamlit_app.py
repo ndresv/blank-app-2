@@ -106,6 +106,7 @@ if api_option == 'Airports':
             # st.write("Debugging Data Output: ", data)  # Debugging statement
             airport = data.get(icao_code, [None])[0]  # Access the first airport in the list
             if airport:
+                st.success("Airport not found.")
                 display_airport_data(airport)
             else:
                 st.warning("Airport not found.")
