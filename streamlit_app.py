@@ -69,10 +69,11 @@ def display_airport_data(airport, show_map):
 
 def display_charts_data(charts_data):
     st.header("Charts Data")
+    
     if charts_data:
         for group in charts_data.keys():
             st.subheader(f"Group: {group}")
-            
+
             # Handle special cases for Group 1 and 7
             if group == '1' or group == '7':
                 group_data = charts_data[group]
@@ -90,38 +91,39 @@ def display_charts_data(charts_data):
                     continue
             else:
                 group_data = charts_data[group]
+
+            # Add debugging to inspect data structure
+            st.write(f"Raw Data for Group {group}:", group_data)
             
-            # Flatten the data if it's a list of dictionaries with different keys
-            if isinstance(group_data, list):
-                # Create a DataFrame from a list of dictionaries
-                try:
-                    # Create a DataFrame with consistent columns
-                    df = pd.DataFrame(group_data)
-                    
-                    # Check for consistent columns and fill missing columns if needed
-                    all_columns = set(col for d in group_data for col in d.keys())
-                    for col in all_columns:
-                        if col not in df.columns:
-                            df[col] = None
-                    
-                    # Ensure that all columns have the same length
-                    df = df[sorted(df.columns)]
-                    
-                    st.write(f"{group} Table")
-                    st.dataframe(df)
-                    
-                    # Example charts (customize based on your actual data)
-                    if 'state' in df.columns and 'value' in df.columns:
-                        st.line_chart(df.set_index('state')['value'])
-                        st.area_chart(df.set_index('state')['value'])
-                        st.bar_chart(df.set_index('state')['value'])
-                    else:
-                        st.warning("Columns 'state' and/or 'value' are missing for charts.")
-                    
-                except Exception as e:
-                    st.error(f"Error processing data for group {group}: {e}")
-            else:
-                st.warning(f"Data for group {group} is not a list of dictionaries.")
+            # Convert to DataFrame
+            try:
+                # Check if all dictionaries in group_data have the same keys
+                keys = group_data[0].keys() if group_data else []
+                for item in group_data:
+                    if item.keys() != keys:
+                        st.warning(f"Inconsistent data keys found: {item.keys()}")
+                        break
+                
+                charts_df = pd.DataFrame(group_data)
+                
+                # Add debugging to inspect DataFrame
+                st.write(f"DataFrame for Group {group}:", charts_df)
+                
+                # Check if DataFrame is empty
+                if charts_df.empty:
+                    st.warning(f"No data available for Group {group}.")
+                    continue
+                
+                # Example charts (customize based on your actual data)
+                if 'state' in charts_df.columns and 'value' in charts_df.columns:
+                    st.line_chart(charts_df.set_index('state')['value'])
+                    st.area_chart(charts_df.set_index('state')['value'])
+                    st.bar_chart(charts_df.set_index('state')['value'])
+                else:
+                    st.warning(f"Expected columns 'state' and 'value' not found for Group {group}.")
+                
+            except Exception as e:
+                st.error(f"Error processing data for group {group}: {e}")
     else:
         st.warning("No charts data available.")
 
