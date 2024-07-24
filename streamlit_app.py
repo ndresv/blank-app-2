@@ -1,136 +1,96 @@
 import streamlit as st
 import requests
-import pandas as pd
-import matplotlib.pyplot as plt
-import matplotlib.dates as mdates
-import datetime
 
-# Base URL
-BASE_URL = "https://api.aviationapi.com/v1"
+# Define API endpoints
+API_BASE_URL = "https://api.aviationapi.com/v1"
 
-# Helper function to fetch data from API
-def fetch_data(endpoint, params={}):
-    try:
-        response = requests.get(f"{BASE_URL}/{endpoint}", params=params)
-        response.raise_for_status()  # Check for HTTP errors
+# Function to make API requests
+def fetch_data(endpoint, params=None):
+    response = requests.get(f"{API_BASE_URL}/{endpoint}", params=params)
+    if response.status_code == 200:
         return response.json()
-    except requests.RequestException as e:
-        st.error(f"Error fetching data: {e}")
+    else:
+        st.error(f"Error {response.status_code}: {response.json().get('message', 'Unknown error')}")
         return None
 
-# Streamlit App
+# Streamlit app
 def main():
-    st.title("FAA Aeronautical Charts and Airport Information")
+    st.title("Aviation Data Viewer")
 
     # Sidebar for navigation
-    st.sidebar.header("Navigation")
-    option = st.sidebar.selectbox("Choose an option", 
-                                  ["Charts", "Airports", "Preferred Routes", "Weather METAR", "Weather TAF", "VATSIM Pilots", "VATSIM Controllers"])
-
-    # Input for parameters
-    st.sidebar.header("Parameters")
-    airport_code = st.sidebar.text_input("Enter Airport ICAO or FAA Code", "")
-
-    # Fetch and display data
-    if option in ["Airports", "Weather METAR", "Weather TAF", "Preferred Routes"]:
-        params = {"apt": airport_code} if airport_code else {}
-    else:
-        params = {}
+    option = st.sidebar.selectbox("Choose an option", [
+        "Charts",
+        "Airports",
+        "Preferred Routes",
+        "Weather METAR",
+        "Weather TAF",
+        "VATSIM Pilots",
+        "VATSIM Controllers"
+    ])
 
     if option == "Charts":
         st.header("Charts")
-        data = fetch_data("charts", params)
-        if data:
-            st.write(data)
-            # Display data as interactive table
-            df = pd.DataFrame(data)
-            st.dataframe(df)
-
+        icao = st.text_input("Enter ICAO Code (e.g., KATL)")
+        if st.button("Fetch Charts"):
+            data = fetch_data("charts", {"apt": icao})
+            if data:
+                st.json(data)
+    
     elif option == "Airports":
         st.header("Airports")
-        data = fetch_data("airports", params)
-        if data:
-            st.write(data)
-            # Display data as interactive table
-            df = pd.DataFrame(data)
-            st.dataframe(df)
-
+        icao = st.text_input("Enter ICAO Code (e.g., KATL)")
+        if st.button("Fetch Airport Data"):
+            data = fetch_data("airports", {"apt": icao})
+            if data:
+                st.json(data)
+    
     elif option == "Preferred Routes":
         st.header("Preferred Routes")
-        data = fetch_data("preferred-routes", params)
-        if data:
-            st.write(data)
-            # Display data as interactive table
-            df = pd.DataFrame(data)
-            st.dataframe(df)
-
+        departure = st.text_input("Enter Departure ICAO (e.g., KATL)")
+        arrival = st.text_input("Enter Arrival ICAO (e.g., KDFW)")
+        if st.button("Fetch Preferred Routes"):
+            data = fetch_data("preferred-routes", {"dep": departure, "arr": arrival})
+            if data:
+                st.json(data)
+    
     elif option == "Weather METAR":
         st.header("Weather METAR")
-        data = fetch_data("weather/metar", params)
-        if data:
-            st.write(data)
-            # Display data as interactive table
-            df = pd.DataFrame(data)
-            st.dataframe(df)
-            # Display a line chart for temperature if available
-            if 'temp' in data[0]:
-                temperatures = [float(item['temp']) for item in data]
-                times = [datetime.datetime.now() for _ in data]
-                fig, ax = plt.subplots()
-                ax.plot(times, temperatures, label="Temperature")
-                ax.set_xlabel("Time")
-                ax.set_ylabel("Temperature (°C)")
-                ax.set_title("Temperature Over Time")
-                ax.xaxis.set_major_locator(mdates.HourLocator())
-                ax.xaxis.set_major_formatter(mdates.DateFormatter('%H:%M'))
-                plt.xticks(rotation=45)
-                st.pyplot(fig)
-
+        icao = st.text_input("Enter ICAO Code (e.g., KAVL)")
+        if st.button("Fetch METAR"):
+            data = fetch_data("weather/metar", {"apt": icao})
+            if data:
+                st.json(data)
+    
     elif option == "Weather TAF":
         st.header("Weather TAF")
-        data = fetch_data("weather/taf", params)
-        if data:
-            st.write(data)
-            # Display data as interactive table
-            df = pd.DataFrame(data)
-            st.dataframe(df)
-
+        icao = st.text_input("Enter ICAO Code (e.g., KAVL)")
+        if st.button("Fetch TAF"):
+            data = fetch_data("weather/taf", {"apt": icao})
+            if data:
+                st.json(data)
+    
     elif option == "VATSIM Pilots":
         st.header("VATSIM Pilots")
-        data = fetch_data("vatsim/pilots", params)
-        if data:
-            st.write(data)
-            # Display data as interactive table
-            df = pd.DataFrame(data)
-            st.dataframe(df)
-
+        airport = st.text_input("Enter Airport ICAO (e.g., KATL)")
+        dep = st.checkbox("Show only departures")
+        arr = st.checkbox("Show only arrivals")
+        if st.button("Fetch VATSIM Pilots"):
+            params = {
+                "apt": airport,
+                "dep": 1 if dep else None,
+                "arr": 1 if arr else None
+            }
+            data = fetch_data("vatsim/pilots", params)
+            if data:
+                st.json(data)
+    
     elif option == "VATSIM Controllers":
         st.header("VATSIM Controllers")
-        data = fetch_data("vatsim/controllers", params)
-        if data:
-            st.write(data)
-            # Display data as interactive table
-            df = pd.DataFrame(data)
-            st.dataframe(df)
-
-    # Add interactive widgets
-    st.sidebar.header("Interactive Widgets")
-    if st.sidebar.button('Show Info'):
-        st.info("This is an information message")
-
-    if st.sidebar.checkbox('Show Warning'):
-        st.warning("This is a warning message")
-
-    if st.sidebar.checkbox('Show Error'):
-        st.error("This is an error message")
-
-    if st.sidebar.radio('Select an Option', ['Option 1', 'Option 2']) == 'Option 1':
-        st.success("You selected Option 1")
-
-    st.sidebar.selectbox('Selectbox Example', ['Choice 1', 'Choice 2'])
-    st.sidebar.slider('Slider Example', 0, 100, 50)
-    st.sidebar.text_input('Text Input Example')
-    st.sidebar.color_picker('Color Picker Example')
+        facility = st.text_input("Enter Facility (e.g., CLT)")
+        if st.button("Fetch VATSIM Controllers"):
+            data = fetch_data("vatsim/controllers", {"fac": facility})
+            if data:
+                st.json(data)
 
 if __name__ == "__main__":
     main()
