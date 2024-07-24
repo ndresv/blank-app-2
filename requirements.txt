@@ -4,3 +4,4 @@ requests
 matplotlib
 pydeck
 numpy
+StringIO
