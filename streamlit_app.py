@@ -69,15 +69,15 @@ def main():
 
                 # Example Map
                 airport_location = {
-                    'lat': [data['latitude']],
-                    'lon': [data['longitude']],
+                    'lat': [data['latitude_sec']],
+                    'lon': [data['longitude_sec']],
                     'label': [data['name']]
                 }
                 df_location = pd.DataFrame(airport_location)
                 st.pydeck_chart(pdk.Deck(
                     initial_view_state=pdk.ViewState(
-                        latitude=data['latitude'],
-                        longitude=data['longitude'],
+                        latitude=data['latitude_sec'],
+                        longitude=data['longitude_sec'],
                         zoom=11,
                         pitch=50
                     ),
