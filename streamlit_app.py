@@ -78,8 +78,6 @@ def display_airport_data(airport, show_map):
 
 # Function to display charts data
 def display_charts_data(charts_data):
-    st.header("Charts Data")
-    st.subheader(f"Group: {CHART_GROUPS.get(group, 'Unknown Group')}")
     if charts_data:
         for group in charts_data.keys():
             charts_df = pd.DataFrame(charts_data[group])
@@ -154,4 +152,6 @@ elif api_option == 'Charts':
     group = [key for key, value in CHART_GROUPS.items() if value == group_description][0]
     if st.button("Fetch Charts Data"):
         data = fetch_data('Charts', API_ENDPOINTS['Charts'].format(icao=icao_code, group=group))
+        st.header("Charts Data")
+        st.subheader(f"Group: {CHART_GROUPS.get(group, 'Unknown Group')}")
         display_charts_data(data)
