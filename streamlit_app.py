@@ -129,8 +129,3 @@ elif api_option == 'VATSIM Pilots':
     if st.button("Fetch VATSIM Pilots Data"):
         data = fetch_data(api_option, f"{API_ENDPOINTS['VATSIM Pilots']}{icao_code}")
         display_vatsim_pilots(data)
-
-st.sidebar.header("Additional Features")
-show_expanded = st.sidebar.checkbox("Show Expanded")
-if show_expanded:
-    st.sidebar.info("Expanded features are shown.")
