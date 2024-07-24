@@ -34,7 +34,7 @@ def dms_to_dd(dms):
 
 # Function to display airport data
 def display_airport_data(data):
-    st.header(f"Airport: {data['facility_name']} ({data['faa_ident']})")
+    st.header(f"Airport: {data["facility_name"]} ({data["faa_ident"]})")
     st.subheader(f"ICAO Code: {data['icao_ident']}")
     st.write(f"City: {data['city']}")
     st.write(f"State: {data['state_full']}")
