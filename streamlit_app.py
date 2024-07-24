@@ -9,7 +9,7 @@ API_ENDPOINTS = {
     'Preferred Routes': 'https://api.aviationapi.com/v1/preferred-routes',
     'Weather METAR': 'https://api.aviationapi.com/v1/weather/metar?apt=',
     'VATSIM Pilots': 'https://api.aviationapi.com/v1/vatsim/pilots',
-    'Charts': 'https://api.aviationapi.com/v1/charts?apt={apt}&group={group}'
+    'Charts': 'https://api.aviationapi.com/v1/charts?apt={icao}&group={group}'
 }
 
 # Function to fetch data from the API
@@ -95,15 +95,16 @@ def display_vatsim_pilots(pilots):
     else:
         st.warning("No VATSIM pilots data available.")
 
-# Function to display charts data
-def display_charts_data(charts, icao_code):
-    st.header(f"Charts for ICAO Code: {icao_code}")
+# Function to display chart data
+def display_chart_data(charts):
+    st.header("Chart Data")
     if charts:
-        charts_df = pd.DataFrame(charts)
+        # Convert chart data to DataFrame for display
+        chart_df = pd.DataFrame(charts)
         st.write("Charts Table")
-        st.dataframe(charts_df)
+        st.dataframe(chart_df)
     else:
-        st.warning("No charts data available.")
+        st.warning("No chart data available.")
 
 # Main app logic
 st.title("Aviation Data Explorer")
@@ -116,6 +117,7 @@ if api_option == 'Airports':
     if st.button("Fetch Airport Data"):
         data = fetch_data(api_option, f"{API_ENDPOINTS['Airports']}{icao_code}")
         if data:
+            st.write("Debugging Data Output: ", data)  # Debugging statement
             airport = data.get(icao_code, [None])[0]  # Access the first airport in the list
             if airport:
                 display_airport_data(airport, show_map)
@@ -140,11 +142,12 @@ elif api_option == 'VATSIM Pilots':
 
 elif api_option == 'Charts':
     icao_code = st.text_input("Enter ICAO code (e.g., KMIA)")
-    group = st.selectbox("Select Chart Group", [1, 2, 3, 4, 5, 6, 7], format_func=lambda x: f"Group {x}")
-    if st.button("Fetch Charts Data"):
-        endpoint = API_ENDPOINTS['Charts'].format(apt=icao_code, group=group)
-        data = fetch_data("Charts", endpoint)
-        display_charts_data(data, icao_code)
+    group = st.selectbox("Select Chart Group", 
+                         options=[1, 2, 3, 4, 5, 6, 7],
+                         format_func=lambda x: f"Group {x}")
+    if st.button("Fetch Chart Data"):
+        data = fetch_data(api_option, API_ENDPOINTS['Charts'].format(icao=icao_code, group=group))
+        display_chart_data(data)
 
 st.sidebar.header("Additional Features")
 show_expanded = st.sidebar.checkbox("Show Expanded")
