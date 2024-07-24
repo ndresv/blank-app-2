@@ -149,5 +149,5 @@ elif api_option == 'Charts':
                 st.subheader(f"Group: {CHART_GROUPS.get(group, 'Unknown Group')}")
                 charts_df = pd.DataFrame(data[group])
                 st.dataframe(charts_df)
-             else:
+            else:
                 st.warning("No charts data available.")
