@@ -56,7 +56,7 @@ def display_airport_data(airport, show_map):
     st.write("Airport Data Table")
     st.dataframe(pd.DataFrame([airport]))
 
-    # Charts (example data)
+    # Example charts (dummy data for illustration)
     chart_data = pd.DataFrame({
         'Attribute': ['Elevation', 'Control Tower'],
         'Value': [int(airport.get('elevation', 0)), 1 if airport.get('control_tower', 'N') == 'Y' else 0]
@@ -67,33 +67,41 @@ def display_airport_data(airport, show_map):
     st.area_chart(chart_data.set_index('Attribute')['Value'])
     st.bar_chart(chart_data.set_index('Attribute')['Value'])
 
-# Function to process and display charts data
+# Function to display charts data
 def display_charts_data(charts_data):
     st.header("Charts Data")
-    if not charts_data:
+    if charts_data:
+        for group in charts_data.keys():
+            st.subheader(f"Group: {group}")
+
+            # Handle different data structures for grouping
+            if group == 'General':
+                charts_df = pd.DataFrame(charts_data[group])
+            elif group == 'DP':
+                charts_df = pd.DataFrame(charts_data[group])
+            elif group == 'Departures':
+                charts_df = pd.DataFrame(charts_data[group])
+            elif group == 'Arrivals':
+                charts_df = pd.DataFrame(charts_data[group])
+            elif group == 'Approaches':
+                charts_df = pd.DataFrame(charts_data[group])
+            else:
+                st.warning(f"Unknown group: {group}")
+                continue
+
+            if charts_df.empty:
+                st.warning(f"No data available for {group}.")
+            else:
+                st.write(f"{group} Table")
+                st.dataframe(charts_df)
+
+                # Example charts (customize based on your actual data)
+                if not charts_df.empty:
+                    st.line_chart(charts_df.set_index('state')['elevation'])
+                    st.area_chart(charts_df.set_index('state')['elevation'])
+                    st.bar_chart(charts_df.set_index('state')['elevation'])
+    else:
         st.warning("No charts data available.")
-        return
-
-    # Iterate through groups and create tables and charts
-    for group, data in charts_data.items():
-        st.subheader(f"Group: {group}")
-        if isinstance(data, dict):
-            for subgroup, records in data.items():
-                st.write(f"Subgroup: {subgroup}")
-                if isinstance(records, list):
-                    charts_df = pd.DataFrame(records)
-                    st.write(f"{subgroup} Table")
-                    st.dataframe(charts_df)
-
-                    # Display charts if relevant data is present
-                    if not charts_df.empty:
-                        st.line_chart(charts_df.set_index('state')['elevation'])
-                        st.area_chart(charts_df.set_index('state')['elevation'])
-                        st.bar_chart(charts_df.set_index('state')['elevation'])
-                else:
-                    st.warning(f"No records found for subgroup {subgroup}.")
-        else:
-            st.warning(f"Unexpected data format for group {group}.")
 
 # Function to display preferred routes data
 def display_preferred_routes(routes):
