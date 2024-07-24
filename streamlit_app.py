@@ -5,9 +5,9 @@ import matplotlib.pyplot as plt
 
 # API endpoints
 API_ENDPOINTS = {
-    'Airports': 'https://api.aviationapi.com/v1/airports',
+    'Airports': 'https://api.aviationapi.com/v1/airports?apt=',
     'Preferred Routes': 'https://api.aviationapi.com/v1/preferred-routes',
-    'Weather METAR': 'https://api.aviationapi.com/v1/weather/metar',
+    'Weather METAR': 'https://api.aviationapi.com/v1/weather/metar?apt=',
     'VATSIM Pilots': 'https://api.aviationapi.com/v1/vatsim/pilots'
 }
 
@@ -38,11 +38,11 @@ def display_airport_data(airport):
     st.write(f"Elevation: {airport.get('elevation', 'N/A')} feet")
     st.write(f"Control Tower: {airport.get('control_tower', 'N/A')}")
     st.write(f"UNICOM Frequency: {airport.get('unicom', 'N/A')}")
-    
+
     # Convert latitude and longitude to decimal degrees
     lat_dd = dms_to_dd(airport.get('latitude', '0-0-0.0N'))
     lon_dd = dms_to_dd(airport.get('longitude', '0-0-0.0E'))
-    
+
     st.map(pd.DataFrame({'lat': [lat_dd], 'lon': [lon_dd]}))
 
     # Interactive table
@@ -96,7 +96,7 @@ api_option = st.sidebar.radio("Select API", list(API_ENDPOINTS.keys()))
 if api_option == 'Airports':
     icao_code = st.text_input("Enter ICAO code (e.g., KAVL)")
     if st.button("Fetch Airport Data"):
-        data = fetch_data(api_option, API_ENDPOINTS['Airports'])
+        data = fetch_data(api_option, f"{API_ENDPOINTS['Airports']}{icao_code}")
         if data:
             st.write("Debugging Data Output: ", data)  # Debugging statement
             airport = next((item for item in data if 'icao_ident' in item and item['icao_ident'] == icao_code), None)
@@ -113,7 +113,7 @@ elif api_option == 'Preferred Routes':
 elif api_option == 'Weather METAR':
     icao_code = st.text_input("Enter ICAO code (e.g., KAVL)")
     if st.button("Fetch Weather Data"):
-        data = fetch_data(api_option, API_ENDPOINTS['Weather METAR'], {'icao': icao_code})
+        data = fetch_data(api_option, f"{API_ENDPOINTS['Weather METAR']}{icao_code}")
         display_weather_data(data)
 
 elif api_option == 'VATSIM Pilots':
