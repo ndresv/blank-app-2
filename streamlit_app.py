@@ -160,17 +160,18 @@ if api_option == 'Airports':
         
         if airport1:
             display_airport_data(airport1, show_map)
-            st.Success("First airport found!")
+            st.success("First airport found!")
         else:
             st.warning("First airport not found!")
         
         if airport2:
             display_airport_data(airport2, show_map)
-            st.Success("Second airport found!")
+            st.success("Second airport found!")
         else:
             st.warning("Second airport not found!")
         
         if airport1 and airport2:
+            st.success("Both airport found!")
             compare_airports(airport1, airport2)
 
 elif api_option == 'Preferred Routes':
