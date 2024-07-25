@@ -1,7 +1,6 @@
 import streamlit as st
 import requests
 import pandas as pd
-import matplotlib.pyplot as plt
 
 # API endpoints
 API_ENDPOINTS = {
@@ -137,7 +136,7 @@ def compare_airports(airport1, airport2):
         }
         comparison_df = pd.DataFrame(comparison_data).set_index('Attribute')
         
-        # Display line chart for comparison
+        # Display bar chart for comparison
         st.write("Elevation Comparison")
         st.bar_chart(comparison_df)
         
