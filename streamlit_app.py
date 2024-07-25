@@ -130,11 +130,10 @@ def compare_airports(airport1, airport2):
         
         # Create a dataframe for comparison
         comparison_data = {
-            'Attribute': ['Elevation'],
-            airport1.get('icao_ident', 'Airport 1'): [int(airport1.get('elevation', 0))],
-            airport2.get('icao_ident', 'Airport 2'): [int(airport2.get('elevation', 0))]
+            'Airport': [airport1.get('icao_ident', 'Airport 1'), airport2.get('icao_ident', 'Airport 2')],
+            'Elevation': [int(airport1.get('elevation', 0)), int(airport2.get('elevation', 0))]
         }
-        comparison_df = pd.DataFrame(comparison_data).set_index('Attribute')
+        comparison_df = pd.DataFrame(comparison_data).set_index('Airport')
         
         # Display bar chart for comparison
         st.write("Elevation Comparison")
