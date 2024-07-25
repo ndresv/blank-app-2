@@ -123,22 +123,58 @@ def display_vatsim_pilots(pilots):
                 st.write("No arrival data available.")
     else:
         st.warning("No VATSIM pilots data available.")
+
+# Function to compare two airports
+def compare_airports(airport1, airport2):
+    if airport1 and airport2:
+        st.header("Compare Airports")
+        
+        # Create a dataframe for comparison
+        comparison_data = {
+            'Attribute': ['Elevation'],
+            airport1.get('icao_ident', 'Airport 1'): [int(airport1.get('elevation', 0))],
+            airport2.get('icao_ident', 'Airport 2'): [int(airport2.get('elevation', 0))]
+        }
+        comparison_df = pd.DataFrame(comparison_data).set_index('Attribute')
+        
+        # Display line chart for comparison
+        st.write("Elevation Comparison")
+        st.line_chart(comparison_df)
+        
+        st.write("Comparison Data Table")
+        st.dataframe(comparison_df)
+    else:
+        st.warning("Both airports must be selected for comparison.")
+
 # Main app logic
 st.title("Aviation Data Explorer")
 
 api_option = st.sidebar.radio("Select API", list(API_ENDPOINTS.keys()))
 
 if api_option == 'Airports':
-    icao_code = st.text_input("Enter ICAO code (e.g., KMIA)")
+    icao_code1 = st.text_input("Enter first ICAO code (e.g., KMIA)")
+    icao_code2 = st.text_input("Enter second ICAO code (optional for comparison)")
     show_map = st.checkbox("Enable Map View", value=True)
     if st.button("Fetch Airport Data"):
-        data = fetch_data(api_option, f"{API_ENDPOINTS['Airports']}{icao_code}")
-        if data:
-            airport = data.get(icao_code, [None])[0]  # Access the first airport in the list
-            if airport:
-                display_airport_data(airport, show_map)
-            else:
-                st.warning("Airport not found.")
+        data1 = fetch_data(api_option, f"{API_ENDPOINTS['Airports']}{icao_code1}")
+        airport1 = data1.get(icao_code1, [None])[0] if data1 else None
+        
+        if icao_code2:
+            data2 = fetch_data(api_option, f"{API_ENDPOINTS['Airports']}{icao_code2}")
+            airport2 = data2.get(icao_code2, [None])[0] if data2 else None
+        else:
+            airport2 = None
+        
+        if airport1:
+            display_airport_data(airport1, show_map)
+        else:
+            st.warning("First airport not found.")
+        
+        if airport2:
+            display_airport_data(airport2, show_map)
+        
+        if airport1 and airport2:
+            compare_airports(airport1, airport2)
 
 elif api_option == 'Preferred Routes':
     if st.button("Fetch Preferred Routes Data"):
