@@ -69,11 +69,6 @@ def display_airport_data(airport, show_map):
         'Value': [int(airport.get('elevation', 0)), 1 if airport.get('control_tower', 'N') == 'Y' else 0]
     })
 
-    st.write("Charts")
-    st.line_chart(chart_data.set_index('Attribute')['Value'])
-    st.area_chart(chart_data.set_index('Attribute')['Value'])
-    st.bar_chart(chart_data.set_index('Attribute')['Value'])
-
 # Function to display charts data
 def display_charts_data(charts_data):
     if charts_data:
@@ -165,11 +160,15 @@ if api_option == 'Airports':
         
         if airport1:
             display_airport_data(airport1, show_map)
+            st.Success("First airport found!")
         else:
-            st.warning("First airport not found.")
+            st.warning("First airport not found!")
         
         if airport2:
             display_airport_data(airport2, show_map)
+            st.Success("Second airport found!")
+        else:
+            st.warning("Second airport not found!")
         
         if airport1 and airport2:
             compare_airports(airport1, airport2)
