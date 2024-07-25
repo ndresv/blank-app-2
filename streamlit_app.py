@@ -139,7 +139,7 @@ def compare_airports(airport1, airport2):
         
         # Display line chart for comparison
         st.write("Elevation Comparison")
-        st.line_chart(comparison_df)
+        st.bar_chart(comparison_df)
         
         st.write("Comparison Data Table")
         st.dataframe(comparison_df)
